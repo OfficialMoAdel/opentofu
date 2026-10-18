@@ -1,0 +1,597 @@
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenTofu - Provisioners & Workspaces</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 OpenTofu - Provisioners & Workspaces</h1>
+            <p>مرجع شامل لأدوات التهيئة (Provisioners) ومساحات العمل (Workspaces)</p>
+        </header>
+
+        <!-- Section 1: Overview -->
+        <div class="section">
+            <h2>📋 نظرة عامة (Overview)</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">
+                الـ Provisioners تتيح تشغيل أوامر على الموارد البعيدة أو المحلية. الـ Workspaces تتيح استخدام نفس الإعدادات لبيئات متعددة (dev, staging, prod).
+            </p>
+
+            <div class="concepts-grid">
+                <div class="concept-card remote">
+                    <h4>remote-exec</h4>
+                    <p>تشغيل أوامر على المورد البعيد</p>
+                </div>
+                <div class="concept-card local">
+                    <h4>local-exec</h4>
+                    <p>تشغيل أوامر على الجهاز المحلي</p>
+                </div>
+                <div class="concept-card connection">
+                    <h4>connection</h4>
+                    <p>إعدادات الاتصال (SSH, WinRM)</p>
+                </div>
+                <div class="concept-card workspace">
+                    <h4>workspaces</h4>
+                    <p>بيئات متعددة بنفس الإعدادات</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Provisioners Basics -->
+        <div class="section">
+            <h2>🔧 أساسيات الـ Provisioners</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                الـ Provisioners تُستخدم لتشغيل أوامر أو سكربتات بعد إنشاء المورد. تُضاف داخل الـ <code>resource</code> block.
+            </p>
+
+            <div class="warning-box">
+                <h4>⚠️ قاعدة ذهبية</h4>
+                <p>
+                    استخدم الـ Provisioners كـ <strong>خيار أخير</strong> فقط!
+                    يفضل دائماً استخدام الخيارات الأصلية للمورد:
+                </p>
+                <table class="command-table" style="margin-top: 10px;">
+                    <thead>
+                        <tr>
+                            <th>الـ Provider</th>
+                            <th>المورد</th>
+                            <th>الخيار البديل</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>AWS</td>
+                            <td><code>aws_instance</code></td>
+                            <td><code>user_data</code></td>
+                        </tr>
+                        <tr>
+                            <td>Azure</td>
+                            <td><code>azurerm_virtual_machine</code></td>
+                            <td><code>custom_data</code></td>
+                        </tr>
+                        <tr>
+                            <td>GCP</td>
+                            <td><code>google_compute_instance</code></td>
+                            <td><code>metadata</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>📄 مثال: استخدام user_data (الطريقة المفضلة)</h3>
+            <div class="code-block">
+                <pre><span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"webserver"</span> {
+  <span class="argument">ami</span>           = <span class="string">"ami-0edab43b6fa892279"</span>
+  <span class="argument">instance_type</span> = <span class="string">"t2.micro"</span>
+
+  <span class="comment"># ✅ الطريقة المفضلة: user_data</span>
+  <span class="argument">user_data</span> = <span class="string"><<-EOF</span>
+    <span class="comment">#!/bin/bash</span>
+    sudo apt update
+    sudo apt install nginx -y
+    systemctl enable nginx
+    systemctl start nginx
+    <span class="string">EOF</span>
+}</pre>
+            </div>
+        </div>
+
+        <!-- Section 3: Remote-Exec Provisioner -->
+        <div class="section">
+            <h2>🌐 remote-exec Provisioner</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                يُستخدم لتشغيل أوامر على المورد البعيد (مثل خادم ويب) بعد إنشائه.
+            </p>
+
+            <h3>📄 مثال عملي كامل</h3>
+            <div class="code-block">
+                <pre><span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"webserver"</span> {
+  <span class="argument">ami</span>           = <span class="string">"ami-0edab43b6fa892279"</span>
+  <span class="argument">instance_type</span> = <span class="string">"t2.micro"</span>
+  <span class="argument">key_name</span>      = <span class="resource">aws_key_pair.web.id</span>
+  <span class="argument">vpc_security_group_ids</span> = [ <span class="resource">aws_security_group.ssh-access.id</span> ]
+
+  <span class="comment"># ← remote-exec provisioner</span>
+  <span class="keyword">provisioner</span> <span class="string">"remote-exec"</span> {
+    <span class="argument">inline</span> = [
+      <span class="string">"sudo apt update"</span>,
+      <span class="string">"sudo apt install nginx -y"</span>,
+      <span class="string">"sudo systemctl enable nginx"</span>,
+      <span class="string">"sudo systemctl start nginx"</span>,
+    ]
+  }
+
+  <span class="comment"># ← connection block (مطلوب)</span>
+  <span class="keyword">connection</span> {
+    <span class="argument">type</span>        = <span class="string">"ssh"</span>
+    <span class="argument">host</span>        = <span class="keyword">self</span>.<span class="attr">public_ip</span>  <span class="comment"># ← self يشير للمورد الحالي</span>
+    <span class="argument">user</span>        = <span class="string">"ubuntu"</span>
+    <span class="argument">private_key</span> = <span class="keyword">file</span>(<span class="string">"/root/.ssh/web"</span>)
+  }
+}
+
+<span class="keyword">resource</span> <span class="string">"aws_key_pair"</span> <span class="string">"web"</span> {
+  <span class="comment"># إعدادات المفتاح</span>
+}
+
+<span class="keyword">resource</span> <span class="string">"aws_security_group"</span> <span class="string">"ssh-access"</span> {
+  <span class="comment"># إعدادات الـ Security Group للسماح بـ SSH</span>
+}</pre>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 متطلبات remote-exec</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li><strong>اتصال شبكة:</strong> SSH للـ Linux، WinRM للـ Windows</li>
+                    <li><strong>Security Group:</strong> يسمح بالاتصال</li>
+                    <li><strong>مفتاح:</strong> SSH Key Pair أو WinRM credentials</li>
+                    <li><strong>connection block:</strong> يحدد كيفية الاتصال</li>
+                </ul>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ ما هو <code>self</code>؟</h4>
+                <p>
+                    <code>self</code> هو تعبير خاص داخل الـ <code>resource</code> block يشير إلى المورد الحالي.
+                    <code>self.public_ip</code> يعني "الـ IP العام لهذا المورد".
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 4: Local-Exec Provisioner -->
+        <div class="section">
+            <h2>💻 local-exec Provisioner</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                يُستخدم لتشغيل أوامر على الجهاز المحلي (حيث يعمل OpenTofu)، وليس على المورد البعيد.
+            </p>
+
+            <h3>📄 مثال: حفظ معلومات في ملف محلي</h3>
+            <div class="code-block">
+                <pre><span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"webserver"</span> {
+  <span class="argument">ami</span>           = <span class="string">"ami-0edab43b6fa892279"</span>
+  <span class="argument">instance_type</span> = <span class="string">"t2.micro"</span>
+
+  <span class="comment"># ← local-exec provisioner (لا يحتاج connection)</span>
+  <span class="keyword">provisioner</span> <span class="string">"local-exec"</span> {
+    <span class="argument">command</span> = <span class="string">"echo ${aws_instance.webserver2.public_ip} >> /tmp/ips.txt"</span>
+  }
+}</pre>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 الفرق بين remote-exec و local-exec</h4>
+                <table class="command-table">
+                    <thead>
+                        <tr>
+                            <th>المعيار</th>
+                            <th>remote-exec</th>
+                            <th>local-exec</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>أين يعمل؟</strong></td>
+                            <td>على المورد البعيد</td>
+                            <td>على الجهاز المحلي</td>
+                        </tr>
+                        <tr>
+                            <td><strong>connection block</strong></td>
+                            <td>✅ مطلوب</td>
+                            <td>❌ غير مطلوب</td>
+                        </tr>
+                        <tr>
+                            <td><strong>الاستخدام</strong></td>
+                            <td>تثبيت برامج على الخادم</td>
+                            <td>تسجيل معلومات، تشغيل سكربتات محلية</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 5: Destroy-Time Provisioners -->
+        <div class="section">
+            <h2>⏱️ Create-Time vs Destroy-Time</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                الـ Provisioners تعمل بعد إنشاء المورد افتراضياً (create-time). يمكن جعلها تعمل قبل الحذف (destroy-time).
+            </p>
+
+            <h3>📄 مثال: provisioner يعمل عند الحذف</h3>
+            <div class="code-block">
+                <pre><span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"webserver"</span> {
+  <span class="argument">ami</span>           = <span class="string">"ami-0edab43b6fa892279"</span>
+  <span class="argument">instance_type</span> = <span class="string">"t2.micro"</span>
+
+  <span class="comment"># ← create-time (الافتراضي)</span>
+  <span class="keyword">provisioner</span> <span class="string">"local-exec"</span> {
+    <span class="argument">command</span> = <span class="string">"echo Instance Created! >> /tmp/state.txt"</span>
+  }
+
+  <span class="comment"># ← destroy-time</span>
+  <span class="keyword">provisioner</span> <span class="string">"local-exec"</span> {
+    <span class="argument">when</span>    = <span class="keyword">destroy</span>  <span class="comment"># ← يعمل قبل الحذف</span>
+    <span class="argument">command</span> = <span class="string">"echo Instance Destroyed! >> /tmp/state.txt"</span>
+  }
+}</pre>
+            </div>
+
+            <h3>📄 مثال: التعامل مع الفشل</h3>
+            <div class="code-block">
+                <pre><span class="comment"># السلوك الافتراضي: فشل الـ provisioner = فشل الـ apply</span>
+<span class="keyword">provisioner</span> <span class="string">"local-exec"</span> {
+  <span class="argument">on_failure</span> = <span class="keyword">fail</span>  <span class="comment"># ← الافتراضي</span>
+  <span class="argument">command</span>    = <span class="string">"some-command"</span>
+}
+
+<span class="comment"># الاستمرار حتى لو فشل الـ provisioner</span>
+<span class="keyword">provisioner</span> <span class="string">"local-exec"</span> {
+  <span class="argument">on_failure</span> = <span class="keyword">continue</span>  <span class="comment"># ← الاستمرار</span>
+  <span class="argument">command</span>    = <span class="string">"some-command"</span>
+}</pre>
+            </div>
+
+            <div class="warning-box">
+                <h4>⚠️ التلوث (Tainting)</h4>
+                <p>
+                    إذا فشل الـ provisioner، يتم تعليم المورد كـ <strong>tainted</strong>.
+                    في الـ <code>apply</code> التالي، سيتم إعادة إنشاء المورد بالكامل!
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 6: Workspaces Basics -->
+        <div class="section">
+            <h2>📁 مساحات العمل (Workspaces) - الأساسيات</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                الـ Workspaces تتيح استخدام نفس الإعدادات لبيئات متعددة (development, production) مع قيم مختلفة.
+            </p>
+
+            <h3>🔧 الأوامر الأساسية</h3>
+            <div class="code-block">
+                <pre><span class="comment"># عرض جميع الـ workspaces</span>
+<span class="keyword">tofu workspace list</span>
+<span class="comment"># النتيجة:</span>
+<span class="comment"># * default</span>
+
+<span class="comment"># إنشاء workspace جديد</span>
+<span class="keyword">tofu workspace new</span> <span class="string">production</span>
+<span class="keyword">tofu workspace new</span> <span class="string">development</span>
+
+<span class="comment"># التبديل إلى workspace</span>
+<span class="keyword">tofu workspace select</span> <span class="string">production</span></pre>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 ملاحظة مهمة</h4>
+                <p>
+                    عند إنشاء workspace جديد، يتم التبديل إليه تلقائياً.
+                    النجمة <code>*</code> تشير إلى الـ workspace الحالي.
+                </p>
+            </div>
+
+            <h3>📂 هيكل الملفات مع الـ Workspaces</h3>
+            <div class="workspace-structure">
+<span class="dir">project/</span>
+├── <span class="file">main.tf</span>
+├── <span class="file">provider.tf</span>
+├── <span class="file">variables.tf</span>
+└── <span class="dir">terraform.tfstate.d/</span>    <span class="comment">← مجلد خاص بالـ workspaces</span>
+    ├── <span class="dir">development/</span>
+    │   └── <span class="file">terraform.tfstate</span>
+    └── <span class="dir">production/</span>
+        └── <span class="file">terraform.tfstate</span>
+            </div>
+
+            <div class="info-box">
+                <h4>ℹ️ ماذا يحدث مع الـ State؟</h4>
+                <p>
+                    عند استخدام الـ Workspaces، لا يتم إنشاء ملف <code>terraform.tfstate</code> في المجلد الرئيسي.
+                    بدلاً من ذلك، يتم إنشاء مجلد <code>terraform.tfstate.d</code> يحتوي على مجلد لكل workspace.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 7: Using Workspaces -->
+        <div class="section">
+            <h2>🎯 استخدام الـ Workspaces عملياً</h2>
+
+            <h3>📄 مثال: instance_type مختلف لكل بيئة</h3>
+            <div class="code-block">
+                <pre><span class="comment"># variables.tf</span>
+<span class="keyword">variable</span> <span class="string">"instance_type"</span> {
+  <span class="argument">type</span> = <span class="keyword">map</span>
+  <span class="argument">default</span> = {
+    <span class="string">"development"</span> = <span class="string">"t2.micro"</span>
+    <span class="string">"production"</span>  = <span class="string">"m5.large"</span>
+  }
+}
+
+<span class="comment"># main.tf</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"webserver"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="keyword">lookup</span>(<span class="variable">var.instance_type</span>, <span class="keyword">terraform.workspace</span>)
+  <span class="comment">#                                        ↑                    ↑</span>
+  <span class="comment">#                                        الخريطة           الـ workspace الحالي</span>
+
+  <span class="argument">tags</span> = {
+    <span class="argument">Environment</span> = <span class="keyword">terraform.workspace</span>  <span class="comment"># ← اسم الـ بيئة</span>
+  }
+}</pre>
+            </div>
+
+            <h3>🔍 اختبار في الـ Console</h3>
+            <div class="code-block">
+                <pre><span class="comment"># في workspace development</span>
+<span class="keyword">tofu console</span>
+> <span class="keyword">terraform.workspace</span>
+<span class="string">"development"</span>
+> <span class="keyword">lookup</span>(<span class="variable">var.instance_type</span>, <span class="keyword">terraform.workspace</span>)
+<span class="string">"t2.micro"</span>
+
+<span class="comment"># بعد التبديل إلى production</span>
+<span class="keyword">tofu workspace select</span> <span class="string">production</span>
+> <span class="keyword">terraform.workspace</span>
+<span class="string">"production"</span>
+> <span class="keyword">lookup</span>(<span class="variable">var.instance_type</span>, <span class="keyword">terraform.workspace</span>)
+<span class="string">"m5.large"</span></pre>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ النتيجة</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li><strong>development workspace:</strong> t2.micro + tag "development"</li>
+                    <li><strong>production workspace:</strong> m5.large + tag "production"</li>
+                    <li>نفس الكود، قيم مختلفة حسب الـ بيئة!</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 8: Practical Example -->
+        <div class="section">
+            <h2>🎯 مثال عملي كامل: نشر التطبيق في بيئات متعددة</h2>
+
+            <h3>📄 main.tf</h3>
+            <div class="code-block">
+                <pre><span class="keyword">module</span> <span class="string">"payroll_app"</span> {
+  <span class="argument">source</span>     = <span class="string">"/root/opentofu-projects/modules/payroll-app"</span>
+  <span class="argument">app_region</span> = <span class="keyword">lookup</span>(<span class="variable">var.region</span>, <span class="keyword">terraform.workspace</span>)
+  <span class="argument">ami</span>        = <span class="keyword">lookup</span>(<span class="variable">var.ami</span>, <span class="keyword">terraform.workspace</span>)
+}</pre>
+            </div>
+
+            <h3>📄 variables.tf</h3>
+            <div class="code-block">
+                <pre><span class="keyword">variable</span> <span class="string">"region"</span> {
+  <span class="argument">type</span> = <span class="keyword">map</span>
+  <span class="argument">default</span> = {
+    <span class="string">"us-payroll"</span>    = <span class="string">"us-east-1"</span>
+    <span class="string">"uk-payroll"</span>    = <span class="string">"eu-west-2"</span>
+    <span class="string">"india-payroll"</span> = <span class="string">"ap-south-1"</span>
+  }
+}
+
+<span class="keyword">variable</span> <span class="string">"ami"</span> {
+  <span class="argument">type</span> = <span class="keyword">map</span>
+  <span class="argument">default</span> = {
+    <span class="string">"us-payroll"</span>    = <span class="string">"ami-24e140119877avm"</span>
+    <span class="string">"uk-payroll"</span>    = <span class="string">"ami-35e140119877avm"</span>
+    <span class="string">"india-payroll"</span> = <span class="string">"ami-55140119877avm"</span>
+  }
+}</pre>
+            </div>
+
+            <h3>🔧 أوامر التنفيذ</h3>
+            <div class="code-block">
+                <pre><span class="comment"># إنشاء الـ workspaces</span>
+<span class="keyword">tofu workspace new</span> <span class="string">us-payroll</span>
+<span class="keyword">tofu workspace new</span> <span class="string">uk-payroll</span>
+<span class="keyword">tofu workspace new</span> <span class="string">india-payroll</span>
+
+<span class="comment"># نشر في كل بيئة</span>
+<span class="keyword">tofu workspace select</span> <span class="string">us-payroll</span>
+<span class="keyword">tofu apply</span>
+
+<span class="keyword">tofu workspace select</span> <span class="string">uk-payroll</span>
+<span class="keyword">tofu apply</span>
+
+<span class="keyword">tofu workspace select</span> <span class="string">india-payroll</span>
+<span class="keyword">tofu apply</span></pre>
+            </div>
+        </div>
+
+        <!-- Section 9: Common Mistakes -->
+        <div class="section">
+            <h2>⚠️ أخطاء شائعة يجب تجنبها</h2>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 1: الإفراط في استخدام الـ Provisioners</h4>
+                <p>
+                    استخدم <code>user_data</code> أو <code>custom_data</code> بدلاً من الـ Provisioners عندما يكون ذلك ممكناً.
+                    الـ Provisioners تسبب مشاكل في الـ state وتحتاج إلى اتصال شبكة.
+                </p>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 2: نسيان الـ connection block مع remote-exec</h4>
+                <div class="code-block">
+                    <pre><span class="comment"># ❌ خطأ - remote-exec بدون connection لن يعمل</span>
+<span class="keyword">provisioner</span> <span class="string">"remote-exec"</span> {
+  <span class="argument">inline</span> = [<span class="string">"echo hello"</span>]
+}
+
+<span class="comment"># ✅ صحيح</span>
+<span class="keyword">provisioner</span> <span class="string">"remote-exec"</span> {
+  <span class="argument">inline</span> = [<span class="string">"echo hello"</span>]
+}
+<span class="keyword">connection</span> {
+  <span class="argument">type</span> = <span class="string">"ssh"</span>
+  <span class="comment"># ...</span>
+}</pre>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 3: نسيان أن الـ workspace يتغير تلقائياً</h4>
+                <p>
+                    عند إنشاء workspace جديد بـ <code>tofu workspace new</code>، يتم التبديل إليه تلقائياً.
+                    تأكد دائماً من أنك في الـ workspace الصحيح باستخدام <code>tofu workspace list</code>.
+                </p>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 4: خلط الـ Workspaces مع الـ Remote State</h4>
+                <p>
+                    عند استخدام Remote State (مثل S3)، قد تتصرف الـ Workspaces بشكل مختلف.
+                    اقرأ الوثائق بعناية قبل الجمع بينهما.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 10: Interview Questions -->
+        <div class="section">
+            <h2>🎤 أسئلة مقابلات مهمة</h2>
+
+            <div class="interview-box">
+                <h4>سؤال 1: ما الفرق بين remote-exec و local-exec؟</h4>
+                <p>
+                    <strong>remote-exec:</strong> يشغل أوامر على المورد البعيد، يحتاج إلى <code>connection</code> block.<br>
+                    <strong>local-exec:</strong> يشغل أوامر على الجهاز المحلي، لا يحتاج إلى <code>connection</code>.
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 2: لماذا لا يُنصح باستخدام الـ Provisioners؟</h4>
+                <p>
+                    لأنها تعتمد على اتصال شبكة، قد تفشل وتسبب <strong>tainting</strong> للمورد،
+                    ولا يتم تتبعها في الـ state بشكل صحيح.
+                    يفضل استخدام الخيارات الأصلية مثل <code>user_data</code>.
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 3: ما هو الـ Tainting؟</h4>
+                <p>
+                    عندما يفشل provisioner أو أي خطوة أثناء إنشاء المورد، يتم تعليم المورد كـ <strong>tainted</strong>.
+                    في الـ <code>apply</code> التالي، سيتم إعادة إنشاء المورد بالكامل.
+                    يمكن إلغاء الـ taint باستخدام <code>tofu untaint</code>.
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 4: ما هي الـ Workspaces ولماذا نستخدمها؟</h4>
+                <p>
+                    الـ Workspaces تتيح استخدام نفس الإعدادات لبيئات متعددة (dev, staging, prod)
+                    مع قيم مختلفة لكل بيئة. كل workspace له ملف state خاص به في مجلد
+                    <code>terraform.tfstate.d</code>.
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 5: كيف تحصل على اسم الـ workspace الحالي؟</h4>
+                <p>
+                    باستخدام التعبير <code>terraform.workspace</code>.
+                    يمكن استخدامه مع دالة <code>lookup()</code> لاختيار قيم مختلفة حسب البيئة.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 11: Quick Reference -->
+        <div class="section">
+            <h2>⚡ مرجع سريع</h2>
+
+            <div class="code-block">
+                <pre><span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Provisioners</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># remote-exec (على المورد البعيد)</span>
+<span class="keyword">provisioner</span> <span class="string">"remote-exec"</span> {
+  <span class="argument">inline</span> = [<span class="string">"command1"</span>, <span class="string">"command2"</span>]
+}
+<span class="keyword">connection</span> {
+  <span class="argument">type</span>        = <span class="string">"ssh"</span>
+  <span class="argument">host</span>        = <span class="keyword">self</span>.<span class="attr">public_ip</span>
+  <span class="argument">user</span>        = <span class="string">"ubuntu"</span>
+  <span class="argument">private_key</span> = <span class="keyword">file</span>(<span class="string">"/path/to/key"</span>)
+}
+
+<span class="comment"># local-exec (على الجهاز المحلي)</span>
+<span class="keyword">provisioner</span> <span class="string">"local-exec"</span> {
+  <span class="argument">command</span> = <span class="string">"echo hello >> file.txt"</span>
+}
+
+<span class="comment"># destroy-time</span>
+<span class="keyword">provisioner</span> <span class="string">"local-exec"</span> {
+  <span class="argument">when</span>    = <span class="keyword">destroy</span>
+  <span class="argument">command</span> = <span class="string">"cleanup"</span>
+}
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Workspaces</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="keyword">tofu workspace list</span>       <span class="comment"># عرض</span>
+<span class="keyword">tofu workspace new</span> <span class="string">name</span>  <span class="comment"># إنشاء</span>
+<span class="keyword">tofu workspace select</span> <span class="string">name</span>  <span class="comment"># تبديل</span>
+
+<span class="comment"># في الكود</span>
+<span class="keyword">terraform.workspace</span>  <span class="comment"># اسم الـ workspace الحالي</span>
+<span class="keyword">lookup</span>(<span class="variable">var.map</span>, <span class="keyword">terraform.workspace</span>)  <span class="comment"># اختيار قيمة</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Best Practices</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># ✅ استخدم user_data بدلاً من provisioners</span>
+<span class="argument">user_data</span> = <span class="keyword">file</span>(<span class="string">"./script.sh"</span>)
+
+<span class="comment"># ✅ استخدم workspaces لبيئات متعددة</span>
+<span class="comment"># ❌ لا تستخدم الـ provisioners كحل أول</span></pre>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-links">
+            <a href="06-version-constraints-modules.html">→ السابق: قيود الإصدارات والوحدات</a>
+            <a href="#">التالي: الدوال والتعابير الشرطية ←</a>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                📚 <strong>المصدر الرئيسي:</strong>
+                <a href="https://opentofu.org/docs/language/resources/provisioners/" target="_blank">Provisioners</a> |
+                <a href="https://opentofu.org/docs/language/state/workspaces/" target="_blank">Workspaces</a>
+            </p>
+            <p style="margin-top: 10px;">
+                🎓 <strong>الهدف:</strong> الحصول على شهادة DevOps ووظيفة في مجال الـ Cloud
+            </p>
+            <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light);">
+                تم الإنشاء بواسطة Teaching Workspace | المرجع رقم: 07
+            </p>
+        </div>
+    </div>
+</body>
+</html>

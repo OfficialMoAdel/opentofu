@@ -1,0 +1,593 @@
+<parameter name="content"><!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenTofu - Version Constraints & Modules</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📦 OpenTofu - Version Constraints & Modules</h1>
+            <p>مرجع شامل لقيود إصدارات الـ Providers والوحدات المحلية والبعيدة</p>
+        </header>
+
+        <!-- Section 1: Overview -->
+        <div class="section">
+            <h2>📋 نظرة عامة (Overview)</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">
+                قيود الإصدارات (Version Constraints) تحدد إصدار الـ Provider الذي يجب تنزيله. الوحدات (Modules) تتيح إعادة استخدام حزم الإعدادات في مشاريع متعددة.
+            </p>
+
+            <div class="concepts-grid">
+                <div class="concept-card version">
+                    <h4>Version Constraints</h4>
+                    <p>تحديد إصدارات الـ Providers</p>
+                </div>
+                <div class="concept-card module">
+                    <h4>Local Modules</h4>
+                    <p>وحدات محلية على جهازك</p>
+                </div>
+                <div class="concept-card registry">
+                    <h4>Registry Modules</h4>
+                    <p>وحدات عامة من الـ Registry</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Version Constraints -->
+        <div class="section">
+            <h2>🔒 قيود الإصدارات (Version Constraints)</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                بدون قيود الإصدارات، يقوم <code>tofu init</code> بتنزيل أحدث إصدار من الـ Provider. هذا قد يسبب مشاكل إذا تغيرت الوظائف بين الإصدارات.
+            </p>
+
+            <h3>📄 تحديد إصدار معين</h3>
+            <div class="code-block">
+                <pre><span class="keyword">terraform</span> {
+  <span class="keyword">required_providers</span> {
+    <span class="module">local</span> = {
+      <span class="argument">source</span>  = <span class="string">"hashicorp/local"</span>
+      <span class="argument">version</span> = <span class="string">"2.3.0"</span>  <span class="comment"># ← إصدار محدد بالضبط</span>
+    }
+  }
+}</pre>
+            </div>
+
+            <h3>📄 عوامل المقارنة (Comparison Operators)</h3>
+            <table class="command-table">
+                <thead>
+                    <tr>
+                        <th>العامل</th>
+                        <th>الاسم</th>
+                        <th>المعنى</th>
+                        <th>مثال</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>=</code></td>
+                        <td>يساوي</td>
+                        <td>إصدار محدد بالضبط</td>
+                        <td><code>version = "2.3.0"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>!=</code></td>
+                        <td>لا يساوي</td>
+                        <td>استبعاد إصدار معين</td>
+                        <td><code>version = "!= 2.4.1"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>&gt;</code></td>
+                        <td>أكبر من</td>
+                        <td>إصدارات أحدث فقط</td>
+                        <td><code>version = "&gt; 2.3.0"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>&lt;</code></td>
+                        <td>أصغر من</td>
+                        <td>إصدارات أقدم فقط</td>
+                        <td><code>version = "&lt; 2.4.1"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>&gt;=</code></td>
+                        <td>أكبر أو يساوي</td>
+                        <td>من هذا الإصدار فما فوق</td>
+                        <td><code>version = "&gt;= 2.3.0"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>&lt;=</code></td>
+                        <td>أصغر أو يساوي</td>
+                        <td>حتى هذا الإصدار</td>
+                        <td><code>version = "&lt;= 2.4.1"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>~&gt;</code></td>
+                        <td>Pessimistic</td>
+                        <td>إصدارات ترقيعية فقط</td>
+                        <td><code>version = "~&gt; 2.2.0"</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning-box">
+                <h4>⚠️ تنبيه مهم</h4>
+                <p>
+                    العامل <code>==</code> (يساوي مع علامتين) <strong>غير صالح</strong> في OpenTofu!
+                    استخدم <code>=</code> (علامة واحدة) فقط.
+                </p>
+            </div>
+
+            <h3>📄 الجمع بين العوامل</h3>
+            <div class="code-block">
+                <pre><span class="comment"># نطاق محدد: أكبر من 2.2.3 وأصغر من 2.4.1 وليس 2.4.0</span>
+<span class="argument">version</span> = <span class="string">"&gt; 2.2.3, != 2.4.0, &lt; 2.4.1"</span>
+<span class="comment"># النتيجة: سيتم تنزيل 2.3.0</span></pre>
+            </div>
+
+            <h3>📄 عامل التشاؤم (Pessimistic Constraint) <code>~&gt;</code></h3>
+            <p style="margin-bottom: 10px; color: var(--text-light);">
+                يسمح بتنزيل الإصدار المحدد وأي إصدارات ترقيعية لاحقة، لكن ليس الإصدارات الرئيسية الجديدة.
+            </p>
+            <div class="code-block">
+                <pre><span class="comment"># مثال 1: يسمح بـ 2.2.0, 2.2.1, 2.2.3, 2.3.0, ... حتى 2.4.1</span>
+<span class="argument">version</span> = <span class="string">"~&gt; 2.2"</span>
+
+<span class="comment"># مثال 2: يسمح بـ 2.2.0, 2.2.1, 2.2.3 فقط (ليس 2.3.0)</span>
+<span class="argument">version</span> = <span class="string">"~&gt; 2.2.0"</span></pre>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 الفرق بين <code>~&gt; 2.2</code> و <code>~&gt; 2.2.0</code></h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li><code>~&gt; 2.2</code>: يسمح بأي إصدار من 2.2 إلى أقل من 3.0 (يشمل 2.3, 2.4, إلخ)</li>
+                    <li><code>~&gt; 2.2.0</code>: يسمح فقط بإصدارات الترقيع من 2.2.x (لا يشمل 2.3)</li>
+                </ul>
+            </div>
+
+            <h3>📄 مثال عملي كامل من الملف</h3>
+            <div class="code-block">
+                <pre><span class="keyword">terraform</span> {
+  <span class="keyword">required_providers</span> {
+    <span class="module">k8s</span> = {
+      <span class="argument">source</span>  = <span class="string">"hashicorp/kubernetes"</span>
+      <span class="argument">version</span> = <span class="string">"&gt; 1.12.0, != 1.13.1, &lt; 1.13.3"</span>
+      <span class="comment"># النتيجة: سيتم تنزيل 1.13.2</span>
+    }
+    <span class="module">helm</span> = {
+      <span class="argument">source</span>  = <span class="string">"hashicorp/helm"</span>
+      <span class="argument">version</span> = <span class="string">"~&gt; 1.2.0"</span>
+      <span class="comment"># النتيجة: سيتم تنزيل 1.2.4 (أحدث ترقيع)</span>
+    }
+  }
+}</pre>
+            </div>
+        </div>
+
+        <!-- Section 3: Modules Basics -->
+        <div class="section">
+            <h2>📁 الوحدات (Modules) - الأساسيات</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                كل مجلد يحتوي على ملفات إعدادات OpenTofu هو وحدة. الوحدات تتيح إعادة استخدام الإعدادات وتبسيط الكود.
+            </p>
+
+            <h3>📂 أنواع الوحدات</h3>
+            <div class="flow-diagram">
+                <div class="flow-box">
+                    <h5>Root Module</h5>
+                    <p>مجلد العمل الحالي الذي تعمل منه</p>
+                </div>
+                <div class="flow-arrow">←</div>
+                <div class="flow-box" style="border-color: var(--module-color); background: linear-gradient(135deg, #fdf2f8, #fce7f3);">
+                    <h5 style="color: #db2777;">Child Module</h5>
+                    <p>وحدة يتم استدعاؤها من الـ Root</p>
+                </div>
+            </div>
+
+            <h3>📄 الـ module block</h3>
+            <div class="code-block">
+                <pre><span class="keyword">module</span> <span class="string">"&lt;module_name&gt;"</span> {
+  <span class="argument">source</span> = <span class="string">"&lt;path_to_module&gt;"</span>  <span class="comment"># ← مطلوب دائماً</span>
+  <span class="comment"># arguments إضافية</span>
+}</pre>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 لماذا نستخدم الوحدات؟</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li><strong>تبسيط الإعدادات:</strong> بدلاً من آلاف الأسطر، ملفات قصيرة وسهلة</li>
+                    <li><strong>إعادة الاستخدام:</strong> نفس الوحدة لعدة بيئات (dev, staging, prod)</li>
+                    <li><strong>تقليل الأخطاء:</strong> وحدة مختبرة ومعتمدة</li>
+                    <li><strong>تقييد الإعدادات:</strong> يمكن إخفاء بعض المتغيرات عن المستخدم</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 4: Local Modules -->
+        <div class="section">
+            <h2>🏠 الوحدات المحلية (Local Modules)</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                وحدات موجودة على نفس الجهاز الذي تعمل عليه. يتم الإشارة إليها عبر مسار نسبي أو مطلق.
+            </p>
+
+            <h3>📂 هيكل المجلدات</h3>
+            <div class="module-structure">
+<span class="dir">/root/opentofu-projects/</span>
+├── <span class="dir">modules/</span>
+│   └── <span class="dir">payroll-app/</span>        <span class="comment">← Child Module</span>
+│       ├── <span class="file">app_server.tf</span>
+│       ├── <span class="file">dynamodb_table.tf</span>
+│       ├── <span class="file">s3_bucket.tf</span>
+│       └── <span class="file">variables.tf</span>
+├── <span class="dir">us-payroll-app/</span>          <span class="comment">← Root Module</span>
+│   ├── <span class="file">main.tf</span>
+│   └── <span class="file">provider.tf</span>
+└── <span class="dir">uk-payroll-app/</span>          <span class="comment">← Root Module</span>
+    ├── <span class="file">main.tf</span>
+    └── <span class="file">provider.tf</span>
+            </div>
+
+            <h3>📄 مثال: وحدة الـ Payroll App</h3>
+            <div class="code-block">
+                <pre><span class="comment"># /root/opentofu-projects/modules/payroll-app/variables.tf</span>
+<span class="keyword">variable</span> <span class="string">"app_region"</span> {
+  <span class="argument">type</span> = <span class="keyword">string</span>
+}
+
+<span class="keyword">variable</span> <span class="string">"ami"</span> {
+  <span class="argument">type</span> = <span class="keyword">string</span>
+}
+
+<span class="keyword">variable</span> <span class="string">"bucket"</span> {
+  <span class="argument">default</span> = <span class="string">"flexit-payroll-alpha-22001c"</span>
+}</pre>
+            </div>
+
+            <div class="code-block">
+                <pre><span class="comment"># /root/opentofu-projects/us-payroll-app/main.tf</span>
+<span class="keyword">module</span> <span class="string">"us_payroll"</span> {
+  <span class="argument">source</span>     = <span class="string">"../modules/payroll-app"</span>  <span class="comment"># ← مسار نسبي</span>
+  <span class="argument">app_region</span> = <span class="string">"us-east-1"</span>
+  <span class="argument">ami</span>        = <span class="string">"ami-2357552336avm"</span>
+}
+
+<span class="comment"># /root/opentofu-projects/uk-payroll-app/main.tf</span>
+<span class="keyword">module</span> <span class="string">"uk_payroll"</span> {
+  <span class="argument">source</span>     = <span class="string">"../modules/payroll-app"</span>
+  <span class="argument">app_region</span> = <span class="string">"eu-west-2"</span>
+  <span class="argument">ami</span>        = <span class="string">"ami-35e140119877avm"</span>
+}</pre>
+            </div>
+
+            <h3>🔍 الـ Addressing Syntax للوحدات</h3>
+            <div class="code-block">
+                <pre><span class="comment"># الصيغة العامة</span>
+<span class="module">module</span>.<span class="resource">module_name</span>.<span class="resource">resource_type</span>.<span class="resource">resource_name</span>
+
+<span class="comment"># مثال عملي</span>
+<span class="module">module</span>.<span class="resource">us_payroll</span>.<span class="resource">aws_dynamodb_table</span>.<span class="resource">payroll_db</span></pre>
+            </div>
+        </div>
+
+        <!-- Section 5: Registry Modules -->
+        <div class="section">
+            <h2>🌐 وحدات الـ Registry (Remote Modules)</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                وحدات عامة مخزنة في الـ OpenTofu/Terraform Registry. يمكن استخدامها مباشرة دون تنزيلها يدوياً.
+            </p>
+
+            <h3>📄 مثال: Security Group من الـ Registry</h3>
+            <div class="code-block">
+                <pre><span class="keyword">module</span> <span class="string">"ssh_security_group"</span> {
+  <span class="argument">source</span>  = <span class="string">"terraform-aws-modules/security-group/aws//modules/ssh"</span>
+  <span class="argument">version</span> = <span class="string">"~&gt; 5.0"</span>
+
+  <span class="comment"># Arguments المطلوبة</span>
+  <span class="argument">name</span>              = <span class="string">"ssh-access"</span>
+  <span class="argument">vpc_id</span>            = <span class="string">"vpc-7d8d215"</span>
+  <span class="argument">ingress_cidr_blocks</span> = [<span class="string">"10.10.0.0/16"</span>]
+}</pre>
+            </div>
+
+            <h3>📄 مثال: IAM User من الـ Registry</h3>
+            <div class="code-block">
+                <pre><span class="keyword">module</span> <span class="string">"iam_iam-user"</span> {
+  <span class="argument">source</span>  = <span class="string">"terraform-aws-modules/iam/aws//modules/iam-user"</span>
+  <span class="argument">version</span> = <span class="string">"5.28.0"</span>
+
+  <span class="comment"># Argument المطلوب الوحيد</span>
+  <span class="argument">name</span> = <span class="string">"max"</span>
+
+  <span class="comment"># تعطيل الموارد الإضافية</span>
+  <span class="argument">create_iam_access_key</span>         = <span class="bool">false</span>
+  <span class="argument">create_iam_user_login_profile</span> = <span class="bool">false</span>
+}</pre>
+            </div>
+
+            <div class="warning-box">
+                <h4>⚠️ حدد دائماً إصدار الوحدة!</h4>
+                <p>
+                    إذا لم تحدد <code>version</code>، سيتم تنزيل أحدث إصدار. هذا قد يكسر إعداداتك إذا تغيرت الوحدة.
+                </p>
+                <div class="code-block">
+                    <pre><span class="comment"># ❌ خطر - قد يتغير الإصدار</span>
+<span class="argument">version</span> = <span class="string">"~&gt; 5.0"</span>  <span class="comment"># مرن جداً</span>
+
+<span class="comment"># ✅ أفضل - إصدار محدد</span>
+<span class="argument">version</span> = <span class="string">"5.28.0"</span>  <span class="comment"># ثابت</span></pre>
+                </div>
+            </div>
+
+            <h3>🔧 تنزيل الوحدات</h3>
+            <div class="code-block">
+                <pre><span class="comment"># تنزيل الـ modules فقط (بدون الـ providers)</span>
+<span class="keyword">tofu get</span>
+
+<span class="comment"># أو مع الـ providers</span>
+<span class="keyword">tofu init</span></pre>
+            </div>
+        </div>
+
+        <!-- Section 6: Comparison -->
+        <div class="section">
+            <h2>⚖️ مقارنة: الوحدات المحلية مقابل البعيدة</h2>
+
+            <table class="command-table">
+                <thead>
+                    <tr>
+                        <th>المعيار</th>
+                        <th>الوحدات المحلية</th>
+                        <th>وحدات الـ Registry</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>الموقع</strong></td>
+                        <td>على جهازك</td>
+                        <td>على الـ Registry العام</td>
+                    </tr>
+                    <tr>
+                        <td><strong>الـ source</strong></td>
+                        <td><code>"../modules/my-module"</code></td>
+                        <td><code>"terraform-aws-modules/..."</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>الـ version</strong></td>
+                        <td>غير مطلوب</td>
+                        <td>مستحسن جداً</td>
+                    </tr>
+                    <tr>
+                        <td><strong>التحكم</strong></td>
+                        <td>كامل - يمكنك التعديل</td>
+                        <td>محدود - كما هي</td>
+                    </tr>
+                    <tr>
+                        <td><strong>المشاركة</strong></td>
+                        <td>صعبة (تحتاج نسخ الملفات)</td>
+                        <td>سهلة (عبر الـ Registry)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>متى تستخدمها؟</strong></td>
+                        <td>إعدادات خاصة بمؤسستك</td>
+                        <td>حلول عامة ومعتمدة</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Section 7: Practical Example -->
+        <div class="section">
+            <h2>🎯 مثال عملي كامل: نشر نفس التطبيق في بيئات متعددة</h2>
+
+            <h3>📂 الخطوة 1: إنشاء الوحدة</h3>
+            <div class="code-block">
+                <pre><span class="comment"># /root/opentofu-projects/modules/payroll-app/app_server.tf</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"app_server"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="string">"t2.medium"</span>  <span class="comment"># ← ثابت في الوحدة</span>
+  <span class="argument">tags</span> = {
+    <span class="argument">Name</span> = <span class="string">"${var.app_region}-app-server"</span>
+  }
+  <span class="argument">depends_on</span> = [
+    <span class="resource">aws_dynamodb_table.payroll_db</span>,
+    <span class="resource">aws_s3_bucket.payroll_data</span>
+  ]
+}
+
+<span class="comment"># /root/opentofu-projects/modules/payroll-app/s3_bucket.tf</span>
+<span class="keyword">resource</span> <span class="string">"aws_s3_bucket"</span> <span class="string">"payroll_data"</span> {
+  <span class="argument">bucket</span> = <span class="string">"${var.app_region}-${var.bucket}"</span>
+}
+
+<span class="comment"># /root/opentofu-projects/modules/payroll-app/dynamodb_table.tf</span>
+<span class="keyword">resource</span> <span class="string">"aws_dynamodb_table"</span> <span class="string">"payroll_db"</span> {
+  <span class="argument">name</span>         = <span class="string">"user_data"</span>  <span class="comment"># ← ثابت في الوحدة</span>
+  <span class="argument">billing_mode</span> = <span class="string">"PAY_PER_REQUEST"</span>
+  <span class="argument">hash_key</span>     = <span class="string">"EmployeeID"</span>
+}</pre>
+            </div>
+
+            <h3>📂 الخطوة 2: استخدام الوحدة في بيئات مختلفة</h3>
+            <div class="code-block">
+                <pre><span class="comment"># /root/opentofu-projects/us-payroll-app/main.tf</span>
+<span class="keyword">module</span> <span class="string">"us_payroll"</span> {
+  <span class="argument">source</span>     = <span class="string">"../modules/payroll-app"</span>
+  <span class="argument">app_region</span> = <span class="string">"us-east-1"</span>
+  <span class="argument">ami</span>        = <span class="string">"ami-2357552336avm"</span>
+}
+
+<span class="comment"># /root/opentofu-projects/uk-payroll-app/main.tf</span>
+<span class="keyword">module</span> <span class="string">"uk_payroll"</span> {
+  <span class="argument">source</span>     = <span class="string">"../modules/payroll-app"</span>
+  <span class="argument">app_region</span> = <span class="string">"eu-west-2"</span>
+  <span class="argument">ami</span>        = <span class="string">"ami-35e140119877avm"</span>
+}</pre>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ النتيجة</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li>نفس البنية التحتية في منطقتين مختلفتين</li>
+                    <li>قيم ثابتة في الوحدة (instance_type, DynamoDB name)</li>
+                    <li>قيم متغيرة من الـ Root (region, AMI)</li>
+                    <li>كود نظيف وقابل للصيانة</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 8: Common Mistakes -->
+        <div class="section">
+            <h2>⚠️ أخطاء شائعة يجب تجنبها</h2>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 1: عدم تحديد إصدار الـ Provider</h4>
+                <p>
+                    بدون <code>version</code>، قد يتم تنزيل إصدار جديد يكسر إعداداتك.
+                </p>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 2: استخدام <code>==</code> بدلاً من <code>=</code></h4>
+                <div class="code-block">
+                    <pre><span class="comment"># ❌ خطأ - عامل غير صالح</span>
+<span class="argument">version</span> = <span class="string">"== 2.3.0"</span>
+
+<span class="comment"># ✅ صحيح</span>
+<span class="argument">version</span> = <span class="string">"2.3.0"</span></pre>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 3: عدم تحديد إصدار الوحدة البعيدة</h4>
+                <p>
+                    الوحدات البعيدة تتغير باستمرار. حدد دائماً <code>version</code> لتجنب المفاجآت.
+                </p>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 4: نسيان <code>tofu init</code> بعد إضافة وحدة</h4>
+                <p>
+                    بعد إضافة وحدة جديدة، يجب تشغيل <code>tofu init</code> لتنزيلها.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 9: Interview Questions -->
+        <div class="section">
+            <h2>🎤 أسئلة مقابلات مهمة</h2>
+
+            <div class="interview-box">
+                <h4>سؤال 1: لماذا نستخدم قيود الإصدارات؟</h4>
+                <p>
+                    لأن وظائف الـ Provider قد تتغير بشكل جذري بين الإصدارات.
+                    قيود الإصدارات تضمن أن إعداداتك ستعمل كما هو متوقع،
+                    وتمنع التحديثات التلقائية التي قد تكسر البنية التحتية.
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 2: ما الفرق بين <code>~&gt; 2.2</code> و <code>~&gt; 2.2.0</code>؟</h4>
+                <p>
+                    <code>~&gt; 2.2</code>: يسمح بأي إصدار من 2.2 حتى أقل من 3.0 (يشمل 2.3, 2.4).<br>
+                    <code>~&gt; 2.2.0</code>: يسمح فقط بإصدارات الترقيع 2.2.x (لا يشمل 2.3).
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 3: ما الفرق بين Root Module و Child Module؟</h4>
+                <p>
+                    <strong>Root Module:</strong> مجلد العمل الحالي الذي تعمل منه (حيث تشغل أوامر tofu).<br>
+                    <strong>Child Module:</strong> وحدة يتم استدعاؤها من الـ Root عبر الـ <code>module</code> block.
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 4: متى تستخدم الوحدات المحلية ومتى تستخدم وحدات الـ Registry؟</h4>
+                <p>
+                    <strong>المحلية:</strong> لإعدادات خاصة بمؤسستك أو مشاريعك.<br>
+                    <strong>الـ Registry:</strong> لحلول عامة ومعتمدة من المجتمع (مثل VPC, Security Groups).
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 5: ما هي صيغة الـ Addressing للوحدات؟</h4>
+                <p>
+                    <code>module.module_name.resource_type.resource_name</code><br>
+                    مثال: <code>module.us_payroll.aws_dynamodb_table.payroll_db</code>
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 10: Quick Reference -->
+        <div class="section">
+            <h2>⚡ مرجع سريع</h2>
+
+            <div class="code-block">
+                <pre><span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Version Constraints</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="keyword">terraform</span> {
+  <span class="keyword">required_providers</span> {
+    <span class="module">aws</span> = {
+      <span class="argument">source</span>  = <span class="string">"hashicorp/aws"</span>
+      <span class="argument">version</span> = <span class="string">"~&gt; 5.0"</span>
+    }
+  }
+}
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Local Module</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="keyword">module</span> <span class="string">"my_module"</span> {
+  <span class="argument">source</span> = <span class="string">"../modules/my-module"</span>
+  <span class="comment"># arguments</span>
+}
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Registry Module</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="keyword">module</span> <span class="string">"vpc"</span> {
+  <span class="argument">source</span>  = <span class="string">"terraform-aws-modules/vpc/aws"</span>
+  <span class="argument">version</span> = <span class="string">"5.0.0"</span>
+  <span class="comment"># arguments</span>
+}
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Commands</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="keyword">tofu init</span>     <span class="comment"># تنزيل الـ providers والـ modules</span>
+<span class="keyword">tofu get</span>      <span class="comment"># تنزيل الـ modules فقط</span>
+<span class="keyword">tofu plan</span>     <span class="comment"># عرض الخطة</span>
+<span class="keyword">tofu apply</span>    <span class="comment"># التنفيذ</span></pre>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-links">
+            <a href="05-data-sources-count-foreach.html">→ السابق: مصادر البيانات و count/for_each</a>
+            <a href="#">التالي: الـ Provisioners والـ Workspaces ←</a>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                📚 <strong>المصدر الرئيسي:</strong>
+                <a href="https://opentofu.org/docs/language/expressions/version-constraints/" target="_blank">Version Constraints</a> |
+                <a href="https://opentofu.org/docs/language/modules/" target="_blank">Modules</a> |
+                <a href="https://registry.opentofu.org/" target="_blank">OpenTofu Registry</a>
+            </p>
+            <p style="margin-top: 10px;">
+                🎓 <strong>الهدف:</strong> الحصول على شهادة DevOps ووظيفة في مجال الـ Cloud
+            </p>
+            <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light);">
+                تم الإنشاء بواسطة Teaching Workspace | المرجع رقم: 06
+            </p>
+        </div>
+    </div>
+</body>
+</html>

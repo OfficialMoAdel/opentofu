@@ -1,0 +1,532 @@
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenTofu - Variables & Data Types</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📦 OpenTofu - Variables & Data Types</h1>
+            <p>مرجع شامل للمتغيرات وأنواع البيانات في OpenTofu</p>
+        </header>
+
+        <!-- Section 1: Variable Basics -->
+        <div class="section">
+            <h2>📋 أساسيات المتغيرات (Variable Basics)</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">
+                المتغيرات تسمح لك بجعل الكود قابلاً لإعادة الاستخدام ومرناً. يتم تعريفها في ملف <code>variables.tf</code> واستخدامها في <code>main.tf</code>.
+            </p>
+
+            <h3>📄 تعريف متغير (في variables.tf)</h3>
+            <div class="code-block">
+                <pre><span class="keyword">variable</span> <span class="string">"instance_type"</span> {
+  <span class="argument">description</span> = <span class="string">"حجم الماكينة الافتراضية"</span>
+  <span class="argument">type</span>        = <span class="keyword">string</span>
+  <span class="argument">default</span>     = <span class="string">"t2.micro"</span>
+}</pre>
+            </div>
+
+            <h3>📄 استخدام المتغير (في main.tf)</h3>
+            <div class="code-block">
+                <pre><span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"web"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.instance_type</span>
+}</pre>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 مكونات المتغير</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li><code>description</code>: وصف اختياري يوضح الغرض من المتغير</li>
+                    <li><code>type</code>: نوع البيانات (string, number, bool, list, map, object, tuple)</li>
+                    <li><code>default</code>: القيمة الافتراضية إذا لم يتم تمرير قيمة</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 2: Data Types Overview -->
+        <div class="section">
+            <h2>🎯 أنواع البيانات (Data Types)</h2>
+
+            <div class="types-grid">
+                <div class="type-card string">
+                    <h4>string</h4>
+                    <p>نص</p>
+                </div>
+                <div class="type-card number">
+                    <h4>number</h4>
+                    <p>رقم</p>
+                </div>
+                <div class="type-card bool">
+                    <h4>bool</h4>
+                    <p>منطقي</p>
+                </div>
+                <div class="type-card list">
+                    <h4>list</h4>
+                    <p>قائمة</p>
+                </div>
+                <div class="type-card map">
+                    <h4>map</h4>
+                    <p>خريطة</p>
+                </div>
+                <div class="type-card object">
+                    <h4>object</h4>
+                    <p>كائن</p>
+                </div>
+                <div class="type-card tuple">
+                    <h4>tuple</h4>
+                    <p>مجموعة مرتبة</p>
+                </div>
+            </div>
+
+            <table class="command-table">
+                <thead>
+                    <tr>
+                        <th>النوع</th>
+                        <th>التصنيف</th>
+                        <th>الوصف</th>
+                        <th>مثال</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>string</code></td>
+                        <td><span class="badge badge-primitive">Primitive</span></td>
+                        <td>نص واحد</td>
+                        <td><code>"t2.micro"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>number</code></td>
+                        <td><span class="badge badge-primitive">Primitive</span></td>
+                        <td>رقم (صحيح أو عشري)</td>
+                        <td><code>42</code>, <code>3.14</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>bool</code></td>
+                        <td><span class="badge badge-primitive">Primitive</span></td>
+                        <td>قيمة منطقية</td>
+                        <td><code>true</code>, <code>false</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>list</code></td>
+                        <td><span class="badge badge-collection">Collection</span></td>
+                        <td>قائمة مرتبة من نفس النوع</td>
+                        <td><code>["a", "b", "c"]</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>map</code></td>
+                        <td><span class="badge badge-collection">Collection</span></td>
+                        <td>أزواج مفتاح-قيمة</td>
+                        <td><code>{"key" = "value"}</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>object</code></td>
+                        <td><span class="badge badge-structural">Structural</span></td>
+                        <td>كائن بخصائص محددة</td>
+                        <td><code>{name = "x", age = 5}</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>tuple</code></td>
+                        <td><span class="badge badge-structural">Structural</span></td>
+                        <td>قائمة بأنواع مختلفة</td>
+                        <td><code>["str", 5, true]</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Section 3: Primitive Types -->
+        <div class="section">
+            <h2>🔤 الأنواع الأساسية (Primitive Types)</h2>
+
+            <h3>1️⃣ String (نص)</h3>
+            <div class="code-block">
+                <pre><span class="keyword">variable</span> <span class="string">"instance_type"</span> {
+  <span class="argument">description</span> = <span class="string">"حجم الماكينة"</span>
+  <span class="argument">type</span>        = <span class="keyword">string</span>
+  <span class="argument">default</span>     = <span class="string">"t2.micro"</span>
+}
+
+<span class="keyword">variable</span> <span class="string">"ami"</span> {
+  <span class="argument">description</span> = <span class="string">"معرف صورة النظام"</span>
+  <span class="argument">type</span>        = <span class="keyword">string</span>
+  <span class="argument">default</span>     = <span class="string">"ami-01211123231yt211kj1k3"</span>
+}</pre>
+            </div>
+
+            <h3>2️⃣ Number (رقم)</h3>
+            <div class="code-block">
+                <pre><span class="keyword">variable</span> <span class="string">"count"</span> {
+  <span class="argument">description</span> = <span class="string">"عدد الماكينات"</span>
+  <span class="argument">type</span>        = <span class="keyword">number</span>
+  <span class="argument">default</span>     = <span class="number">2</span>
+}
+
+<span class="keyword">variable</span> <span class="string">"cpu_cores"</span> {
+  <span class="argument">type</span>    = <span class="keyword">number</span>
+  <span class="argument">default</span> = <span class="number">4</span>
+}</pre>
+            </div>
+
+            <h3>3️⃣ Boolean (منطقي)</h3>
+            <div class="code-block">
+                <pre><span class="keyword">variable</span> <span class="string">"monitoring"</span> {
+  <span class="argument">description</span> = <span class="string">"تفعيل المراقبة التفصيلية"</span>
+  <span class="argument">type</span>        = <span class="keyword">bool</span>
+  <span class="argument">default</span>     = <span class="bool">true</span>
+}
+
+<span class="keyword">variable</span> <span class="string">"enable_backup"</span> {
+  <span class="argument">type</span>    = <span class="keyword">bool</span>
+  <span class="argument">default</span> = <span class="bool">false</span>
+}</pre>
+            </div>
+        </div>
+
+        <!-- Section 4: Collection Types -->
+        <div class="section">
+            <h2>📚 أنواع المجموعات (Collection Types)</h2>
+
+            <h3>1️⃣ List (قائمة)</h3>
+            <p style="margin-bottom: 10px; color: var(--text-light);">
+                قائمة مرتبة من عناصر نفس النوع. يتم الوصول للعناصر عبر الفهرس (index) الذي يبدأ من 0.
+            </p>
+            <div class="code-block">
+                <pre><span class="comment"># قائمة نصوص</span>
+<span class="keyword">variable</span> <span class="string">"servers"</span> {
+  <span class="argument">type</span>    = <span class="keyword">list</span>(<span class="keyword">string</span>)
+  <span class="argument">default</span> = [<span class="string">"web1"</span>, <span class="string">"web2"</span>, <span class="string">"web3"</span>]
+}
+
+<span class="comment"># قائمة أرقام</span>
+<span class="keyword">variable</span> <span class="string">"prefix"</span> {
+  <span class="argument">type</span>    = <span class="keyword">list</span>(<span class="keyword">number</span>)
+  <span class="argument">default</span> = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>]
+}
+
+<span class="comment"># الاستخدام في المورد</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"web"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.instance_type</span>
+  <span class="argument">tags</span> = {
+    <span class="argument">Name</span> = <span class="variable">var.servers[0]</span>  <span class="comment"># web1</span>
+  }
+}</pre>
+            </div>
+
+            <h3>2️⃣ Map (خريطة)</h3>
+            <p style="margin-bottom: 10px; color: var(--text-light);">
+                مجموعة من أزواج مفتاح-قيمة. يتم الوصول للقيم عبر المفتاح.
+            </p>
+            <div class="code-block">
+                <pre><span class="comment"># خريطة نصوص</span>
+<span class="keyword">variable</span> <span class="string">"instance_type"</span> {
+  <span class="argument">type</span> = <span class="keyword">map</span>(<span class="keyword">string</span>)
+  <span class="argument">default</span> = {
+    <span class="string">"production"</span>  = <span class="string">"m5.large"</span>
+    <span class="string">"development"</span> = <span class="string">"t2.micro"</span>
+  }
+}
+
+<span class="comment"># خريطة أرقام</span>
+<span class="keyword">variable</span> <span class="string">"servers_count"</span> {
+  <span class="argument">type</span> = <span class="keyword">map</span>(<span class="keyword">number</span>)
+  <span class="argument">default</span> = {
+    <span class="string">"web"</span>   = <span class="number">3</span>
+    <span class="string">"db"</span>    = <span class="number">1</span>
+    <span class="string">"agent"</span> = <span class="number">2</span>
+  }
+}
+
+<span class="comment"># الاستخدام في المورد</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"production"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.instance_type["production"]</span>  <span class="comment"># m5.large</span>
+}</pre>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 الفرق بين List و Map</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li><strong>List:</strong> الوصول عبر الفهرس <code>var.servers[0]</code></li>
+                    <li><strong>Map:</strong> الوصول عبر المفتاح <code>var.instance_type["production"]</code></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 5: Structural Types -->
+        <div class="section">
+            <h2>🏗️ الأنواع الهيكلية (Structural Types)</h2>
+
+            <h3>1️⃣ Object (كائن)</h3>
+            <p style="margin-bottom: 10px; color: var(--text-light);">
+                كائن بخصائص محددة، كل خاصية لها نوع معين. مفيد لتمثيل بيانات معقدة.
+            </p>
+            <div class="code-block">
+                <pre><span class="keyword">variable</span> <span class="string">"bella"</span> {
+  <span class="argument">type</span> = <span class="keyword">object</span>({
+    <span class="argument">name</span>         = <span class="keyword">string</span>
+    <span class="argument">color</span>        = <span class="keyword">string</span>
+    <span class="argument">age</span>          = <span class="keyword">number</span>
+    <span class="argument">food</span>         = <span class="keyword">list</span>(<span class="keyword">string</span>)
+    <span class="argument">favorite_pet</span> = <span class="keyword">bool</span>
+  })
+  <span class="argument">default</span> = {
+    <span class="argument">name</span>         = <span class="string">"bella"</span>
+    <span class="argument">color</span>        = <span class="string">"brown"</span>
+    <span class="argument">age</span>          = <span class="number">7</span>
+    <span class="argument">food</span>         = [<span class="string">"fish"</span>, <span class="string">"chicken"</span>, <span class="string">"turkey"</span>]
+    <span class="argument">favorite_pet</span> = <span class="bool">true</span>
+  }
+}
+
+<span class="comment"># الاستخدام</span>
+<span class="keyword">output</span> <span class="string">"pet_name"</span> {
+  <span class="argument">value</span> = <span class="variable">var.bella.name</span>  <span class="comment"># bella</span>
+}
+
+<span class="keyword">output</span> <span class="string">"pet_food"</span> {
+  <span class="argument">value</span> = <span class="variable">var.bella.food[0]</span>  <span class="comment"># fish</span>
+}</pre>
+            </div>
+
+            <h3>2️⃣ Tuple (مجموعة مرتبة)</h3>
+            <p style="margin-bottom: 10px; color: var(--text-light);">
+                قائمة مرتبة يمكن أن تحتوي على أنواع مختلفة. كل عنصر له نوع محدد.
+            </p>
+            <div class="code-block">
+                <pre><span class="keyword">variable</span> <span class="string">"web"</span> {
+  <span class="argument">type</span>    = <span class="keyword">tuple</span>([<span class="keyword">string</span>, <span class="keyword">number</span>, <span class="keyword">bool</span>])
+  <span class="argument">default</span> = [<span class="string">"web1"</span>, <span class="number">7</span>, <span class="bool">true</span>]
+}
+
+<span class="comment"># الاستخدام</span>
+<span class="keyword">output</span> <span class="string">"server_name"</span> {
+  <span class="argument">value</span> = <span class="variable">var.web[0]</span>  <span class="comment"># web1</span>
+}
+
+<span class="keyword">output</span> <span class="string">"server_port"</span> {
+  <span class="argument">value</span> = <span class="variable">var.web[1]</span>  <span class="comment"># 7</span>
+}</pre>
+            </div>
+
+            <div class="interview-box">
+                <h4>🎤 سؤال مقابلة شائع</h4>
+                <p>
+                    <strong>ما الفرق بين List و Tuple؟</strong><br>
+                    • <code>List</code>: جميع العناصر يجب أن تكون نفس النوع، والطول غير محدد مسبقاً.<br>
+                    • <code>Tuple</code>: كل عنصر يمكن أن يكون نوع مختلف، والطول والأنواع محددة مسبقاً.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 6: Passing Variables -->
+        <div class="section">
+            <h2>🚀 طرق تمرير المتغيرات</h2>
+
+            <h3>1️⃣ القيمة الافتراضية (في الملف)</h3>
+            <div class="code-block">
+                <pre><span class="comment"># variables.tf</span>
+<span class="keyword">variable</span> <span class="string">"instance_type"</span> {
+  <span class="argument">default</span> = <span class="string">"t2.micro"</span>
+}</pre>
+            </div>
+
+            <h3>2️⃣ عبر سطر الأوامر (-var)</h3>
+            <div class="code-block">
+                <pre><span class="comment"># تمرير متغير واحد</span>
+<span class="keyword">tofu apply</span> -var <span class="string">"ami=ami-878idod"</span> -var <span class="string">"instance_type=t2.micro"</span>
+
+<span class="comment"># تمرير متغير من نوع معقد</span>
+<span class="keyword">tofu apply</span> -var <span class="string">'instance_type={"production"="m5.large"}'</span></pre>
+            </div>
+
+            <h3>3️⃣ عبر متغيرات البيئة (Environment Variables)</h3>
+            <div class="code-block">
+                <pre><span class="comment"># Linux/Mac</span>
+<span class="keyword">export</span> TF_VAR_instance_type=<span class="string">"t3.micro"</span>
+<span class="keyword">export</span> TF_VAR_ami=<span class="string">"ami-878idod"</span>
+<span class="keyword">tofu apply</span>
+
+<span class="comment"># Windows (PowerShell)</span>
+<span class="keyword">$env:TF_VAR_instance_type</span> = <span class="string">"t3.micro"</span>
+<span class="keyword">tofu apply</span></pre>
+            </div>
+
+            <h3>4️⃣ عبر ملف متغيرات (.tfvars)</h3>
+            <div class="code-block">
+                <pre><span class="comment"># terraform.tfvars (يتم قراءته تلقائياً)</span>
+<span class="argument">instance_type</span> = <span class="string">"t2.micro"</span>
+<span class="argument">ami</span>           = <span class="string">"ami-878idod"</span>
+
+<span class="comment"># أو ملف مخصص</span>
+<span class="keyword">tofu apply</span> -var-file=<span class="string">"prod.tfvars"</span></pre>
+            </div>
+
+            <table class="command-table">
+                <thead>
+                    <tr>
+                        <th>الطريقة</th>
+                        <th>متى تستخدمها</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>default</code> في الملف</td>
+                        <td>قيم ثابتة لا تتغير بين البيئات</td>
+                    </tr>
+                    <tr>
+                        <td><code>-var</code></td>
+                        <td>تجاوز سريع أثناء الاختبار</td>
+                    </tr>
+                    <tr>
+                        <td><code>TF_VAR_*</code></td>
+                        <td>أسرار أو قيم حساسة (لا تظهر في التاريخ)</td>
+                    </tr>
+                    <tr>
+                        <td><code>.tfvars</code></td>
+                        <td>بيئات مختلفة (dev, staging, prod)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Section 7: Complete Example -->
+        <div class="section">
+            <h2>🎯 مثال كامل من الملف الأصلي</h2>
+
+            <h3>📄 variables.tf</h3>
+            <div class="code-block">
+                <pre><span class="keyword">variable</span> <span class="string">"ami"</span> {
+  <span class="argument">description</span> = <span class="string">"Type of AMI to use"</span>
+  <span class="argument">type</span>        = <span class="keyword">string</span>
+  <span class="argument">default</span>     = <span class="string">"ami-01211123231yt211kj1k3"</span>
+}
+
+<span class="keyword">variable</span> <span class="string">"instance_type"</span> {
+  <span class="argument">description</span> = <span class="string">"size of EC2"</span>
+  <span class="argument">type</span>        = <span class="keyword">string</span>
+  <span class="argument">default</span>     = <span class="string">"t2.micro"</span>
+}
+
+<span class="keyword">variable</span> <span class="string">"count"</span> {
+  <span class="argument">description</span> = <span class="string">"Count of VM's"</span>
+  <span class="argument">type</span>        = <span class="keyword">number</span>
+  <span class="argument">default</span>     = <span class="number">2</span>
+}
+
+<span class="keyword">variable</span> <span class="string">"monitoring"</span> {
+  <span class="argument">description</span> = <span class="string">"Enable detailed monitoring"</span>
+  <span class="argument">type</span>        = <span class="keyword">bool</span>
+  <span class="argument">default</span>     = <span class="bool">true</span>
+}
+
+<span class="keyword">variable</span> <span class="string">"servers"</span> {
+  <span class="argument">type</span>    = <span class="keyword">list</span>(<span class="keyword">string</span>)
+  <span class="argument">default</span> = [<span class="string">"web1"</span>, <span class="string">"web2"</span>, <span class="string">"web3"</span>]
+}</pre>
+            </div>
+
+            <h3>📄 main.tf</h3>
+            <div class="code-block">
+                <pre><span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"webserver"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.instance_type</span>
+  <span class="argument">monitoring</span>    = <span class="variable">var.monitoring</span>
+
+  <span class="argument">tags</span> = {
+    <span class="argument">Name</span> = <span class="variable">var.servers[0]</span>
+  }
+}</pre>
+            </div>
+        </div>
+
+        <!-- Section 8: Common Mistakes -->
+        <div class="section">
+            <h2>⚠️ أخطاء شائعة يجب تجنبها</h2>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 1: استخدام provider بدلاً من variable</h4>
+                <div class="code-block">
+                    <pre><span class="comment"># ❌ خطأ</span>
+<span class="keyword">provider</span> <span class="string">"instance_type"</span> {
+  <span class="argument">default</span> = <span class="string">"t2.micro"</span>
+}
+
+<span class="comment"># ✅ صحيح</span>
+<span class="keyword">variable</span> <span class="string">"instance_type"</span> {
+  <span class="argument">default</span> = <span class="string">"t2.micro"</span>
+}</pre>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 2: نسيان تحديد النوع</h4>
+                <p>
+                    دائماً حدد <code>type</code> للمتغير. هذا يساعد في اكتشاف الأخطاء مبكراً ويوثق الكود.
+                </p>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 3: استخدام قيم حساسة في المتغيرات</h4>
+                <p>
+                    لا تضع كلمات المرور أو المفاتيح السرية في <code>default</code>. استخدم متغيرات البيئة أو خدمة إدارة الأسرار.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 9: Interview Questions -->
+        <div class="section">
+            <h2>🎤 أسئلة مقابلات مهمة</h2>
+
+            <div class="interview-box">
+                <h4>سؤال 1: ما هي أنواع البيانات في OpenTofu؟</h4>
+                <p>
+                    الأنواع الأساسية: <code>string</code>, <code>number</code>, <code>bool</code><br>
+                    أنواع المجموعات: <code>list</code>, <code>map</code>, <code>set</code><br>
+                    الأنواع الهيكلية: <code>object</code>, <code>tuple</code>
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 2: كيف تمرر متغير من سطر الأوامر؟</h4>
+                <p>
+                    <code>tofu apply -var "name=value"</code>
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 3: ما هو ترتيب أولوية القيم؟</h4>
+                <p>
+                    1. <code>-var</code> من سطر الأوامر (الأعلى)<br>
+                    2. ملف <code>.tfvars</code><br>
+                    3. متغيرات البيئة <code>TF_VAR_*</code><br>
+                    4. <code>default</code> في الملف (الأقل)
+                </p>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-links">
+            <a href="01-basic-workflow-and-structure.html">→ السابق: دورة العمل الأساسية</a>
+            <a href="#">التالي: المتغيرات المتقدمة ←</a>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                📚 <strong>المصدر الرئيسي:</strong>
+                <a href="https://opentofu.org/docs/language/values/variables/" target="_blank">OpenTofu Variables Documentation</a>
+            </p>
+            <p style="margin-top: 10px;">
+                🎓 <strong>الهدف:</strong> الحصول على شهادة DevOps ووظيفة في مجال الـ Cloud
+            </p>
+            <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light);">
+                تم الإنشاء بواسطة Teaching Workspace | المرجع رقم: 02
+            </p>
+        </div>
+    </div>
+</body>
+</html>

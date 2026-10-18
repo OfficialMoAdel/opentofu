@@ -1,0 +1,614 @@
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenTofu - Migration from Terraform & Rollback</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+      .comparison-card li {
+          margin-bottom: 8px;
+      }
+      .concept-card.version {
+          background: #faf5ff;
+          border-color: var(--terraform-color);
+      }
+      .concept-card.version h4 {
+          color: #7b42bc;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🔄 OpenTofu - Migration from Terraform & Rollback</h1>
+        <p>مرجع شامل للترحيل من Terraform إلى OpenTofu والعودة بأمان</p>
+      </header>
+
+      <!-- Section 1: Overview -->
+      <div class="section">
+        <h2>📋 نظرة عامة (Overview)</h2>
+        <p style="margin-bottom: 20px; color: var(--text-light)">
+          OpenTofu هو فرع مفتوح المصدر من Terraform. الترحيل بينهما سهل نسبياً
+          لأنهما متوافقان حتى الإصدار 1.6. هذا المرجع يشرح خطوات الترحيل والعودة
+          بأمان.
+        </p>
+
+        <div class="concepts-grid">
+          <div class="concept-card version">
+            <h4>Terraform 1.6</h4>
+            <p>متوافق مع OpenTofu 1.6</p>
+          </div>
+          <div class="concept-card migration">
+            <h4>Migration</h4>
+            <p>الترحيل إلى OpenTofu</p>
+          </div>
+          <div class="concept-card rollback">
+            <h4>Rollback</h4>
+            <p>العودة إلى Terraform</p>
+          </div>
+          <div class="concept-card community">
+            <h4>Community</h4>
+            <p>المساعدة والدعم</p>
+          </div>
+        </div>
+
+        <div class="version-note">
+          <div class="version">Terraform 1.6 ⇄ OpenTofu 1.6</div>
+          <div class="description">
+            الإصدار 1.6 من Terraform متوافق تماماً مع OpenTofu 1.6.<br />
+            إذا كنت تستخدم إصداراً أقدم، قم بالترقية إلى 1.6 أولاً قبل الترحيل.
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <h4>⚠️ قبل البدء: خطة التعافي من الكوارث</h4>
+          <p>قبل أي ترحيل، تأكد من أن لديك:</p>
+          <ul style="margin-right: 20px; margin-top: 10px">
+            <li>
+              نسخة احتياطية من ملف الحالة (<code>terraform.tfstate</code>)
+            </li>
+            <li>خطة تعافي واضحة في حالة فشل الترحيل</li>
+            <li>بيئة اختبار لتجربة الترحيل قبل الإنتاج</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Section 2: Migration Steps -->
+      <div class="section">
+        <h2>🚀 خطوات الترحيل إلى OpenTofu</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          اتبع هذه الخطوات بالترتيب لترحيل آمن من Terraform إلى OpenTofu.
+        </p>
+
+        <div class="steps-container">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>إنشاء نسخة احتياطية من ملف الحالة</h4>
+              <p>قم بضغط وأرشفة ملف الحالة قبل أي تغيير.</p>
+              <code>tar -czf tfstate.tar.gz terraform.tfstate</code>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>تثبيت OpenTofu</h4>
+              <p>ثبت OpenTofu على جهازك حسب نظام التشغيل.</p>
+              <code>tofu --version</code>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>تهيئة المشروع بـ OpenTofu</h4>
+              <p>
+                شغل <code>tofu init</code> لتهيئة المشروع وتنزيل الـ Providers.
+              </p>
+              <code>tofu init</code>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>فحص الخطة</h4>
+              <p>
+                شغل <code>tofu plan</code> للتأكد من عدم وجود تغييرات غير
+                متوقعة.
+              </p>
+              <code>tofu plan</code>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">5</div>
+            <div class="step-content">
+              <h4>اختبار بتغيير صغير</h4>
+              <p>
+                طبق تغييراً صغيراً (مثل تعديل اسم ملف) للتأكد من أن كل شيء يعمل.
+              </p>
+              <code>tofu apply</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="success-box">
+          <h4>✅ نصيحة مهمة</h4>
+          <p>
+            تأكد من أن التغيير الاختباري <strong>لا يتضمن</strong> أجزاء حرجة من
+            البنية التحتية. استخدم مورداً بسيطاً مثل ملف محلي أو مورد اختباري.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 3: Practical Example -->
+      <div class="section">
+        <h2>🎯 مثال عملي كامل: الترحيل خطوة بخطوة</h2>
+
+        <h3>📄 الخطوة 1: الإعداد الأولي مع Terraform</h3>
+        <div class="code-block">
+          <pre><span class="comment"># main.tf (قبل الترحيل)</span>
+<span class="keyword">resource</span> <span class="string">"local_file"</span> <span class="string">"config"</span> {
+  <span class="argument">filename</span> = <span class="string">"terraform.txt"</span>
+  <span class="argument">content</span>  = <span class="string">"This file has been created with Terraform"</span>
+}</pre>
+        </div>
+
+        <div class="code-block">
+          <pre><span class="comment"># تشغيل الأوامر مع Terraform</span>
+<span class="keyword">terraform init</span>
+<span class="keyword">terraform apply</span>
+<span class="success"># → terraform.txt تم إنشاؤه</span></pre>
+        </div>
+
+        <h3>📄 الخطوة 2: إنشاء نسخة احتياطية</h3>
+        <div class="code-block">
+          <pre><span class="comment"># ضغط ملف الحالة</span>
+<span class="keyword">tar</span> <span class="flag">-czf</span> tfstate.tar.gz terraform.tfstate
+
+<span class="comment"># التحقق من إنشاء النسخة الاحتياطية</span>
+<span class="keyword">ls</span> <span class="flag">-la</span>
+<span class="comment"># → terraform.tfstate, tfstate.tar.gz</span></pre>
+        </div>
+
+        <h3>📄 الخطوة 3: تثبيت OpenTofu</h3>
+        <div class="code-block">
+          <pre><span class="comment"># التحقق من نظام التشغيل</span>
+<span class="keyword">cat</span> /etc/os-release
+<span class="comment"># → Ubuntu 22.04</span>
+
+<span class="comment"># تثبيت OpenTofu (مثال على Ubuntu/Debian)</span>
+<span class="keyword">curl</span> <span class="flag">-fsSL</span> https://get.opentofu.org/install-opentofu.sh <span class="flag">-o</span> install-opentofu.sh
+<span class="keyword">chmod</span> <span class="flag">+x</span> install-opentofu.sh
+<span class="keyword">./install-opentofu.sh</span>
+
+<span class="comment"># التحقق من التثبيت</span>
+<span class="keyword">tofu</span> <span class="flag">--version</span>
+<span class="output">OpenTofu v1.6.x</span></pre>
+        </div>
+
+        <h3>📄 الخطوة 4: التهيئة والفحص</h3>
+        <div class="code-block">
+          <pre><span class="comment"># تهيئة المشروع مع OpenTofu</span>
+<span class="keyword">tofu init</span>
+
+<span class="comment"># فحص الخطة - يجب أن يعرض "No changes"</span>
+<span class="keyword">tofu plan</span>
+<span class="output"># No changes. Your infrastructure matches the configuration.</span></pre>
+        </div>
+
+        <h3>📄 الخطوة 5: اختبار بتغيير صغير</h3>
+        <div class="code-block">
+          <pre><span class="comment"># تعديل main.tf</span>
+<span class="keyword">resource</span> <span class="string">"local_file"</span> <span class="string">"config"</span> {
+  <span class="argument">filename</span> = <span class="string">"opentofu.txt"</span>  <span class="comment"># ← تغيير الاسم</span>
+  <span class="argument">content</span>  = <span class="string">"This file has been created with OpenTofu"</span>
+}
+
+<span class="comment"># تطبيق التغيير</span>
+<span class="keyword">tofu apply</span>
+<span class="success"># → opentofu.txt تم إنشاؤه، و terraform.txt تم حذفه</span></pre>
+        </div>
+      </div>
+
+      <!-- Section 4: Rollback Steps -->
+      <div class="section">
+        <h2>↩️ الترحيل العكسي: العودة إلى Terraform</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          إذا واجهت مشاكل مع OpenTofu، يمكنك العودة إلى Terraform بنفس السهولة.
+        </p>
+
+        <div class="steps-container">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>إنشاء نسخة احتياطية من حالة OpenTofu</h4>
+              <p>قبل العودة، احفظ الحالة الحالية.</p>
+              <code>tar -czf terraform.tfstate.tar.gz terraform.tfstate</code>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>تهيئة المشروع مع Terraform</h4>
+              <p>شغل <code>terraform init</code> لإعادة التهيئة.</p>
+              <code>terraform init</code>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>فحص الخطة</h4>
+              <p>تأكد من عدم وجود تغييرات غير متوقعة.</p>
+              <code>terraform plan</code>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>الاستمرار مع Terraform</h4>
+              <p>إذا نجحت الخطة، يمكنك الاستمرار بأمان.</p>
+              <code>terraform apply</code>
+            </div>
+          </div>
+        </div>
+
+        <h3>📄 مثال عملي: العودة إلى Terraform</h3>
+        <div class="code-block">
+          <pre><span class="comment"># 1. إنشاء نسخة احتياطية</span>
+<span class="keyword">tar</span> <span class="flag">-czf</span> terraform.tfstate.tar.gz terraform.tfstate
+
+<span class="comment"># 2. إعادة التهيئة مع Terraform</span>
+<span class="keyword">terraform init</span>
+
+<span class="comment"># 3. تعديل main.tf للعودة</span>
+<span class="keyword">resource</span> <span class="string">"local_file"</span> <span class="string">"config"</span> {
+  <span class="argument">filename</span> = <span class="string">"terraform.txt"</span>
+  <span class="argument">content</span>  = <span class="string">"This file has been created with Terraform"</span>
+}
+
+<span class="comment"># 4. تطبيق التغييرات</span>
+<span class="keyword">terraform apply</span>
+<span class="success"># → terraform.txt تم إنشاؤه، و opentofu.txt تم حذفه</span></pre>
+        </div>
+
+        <div class="tip-box">
+          <h4>💡 ملاحظة مهمة</h4>
+          <p>
+            أثناء عملية الترحيل العكسي، قد يكون هناك
+            <strong>تباعد (divergence)</strong> بين ما تم إنشاؤه بـ OpenTofu وما
+            تتوقعه إعدادات Terraform. في الحالات النادرة، قد تحتاج إلى استعادة
+            النسخة الاحتياطية من الحالة.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 5: Comparison -->
+      <div class="section">
+        <h2>⚖️ مقارنة: الترحيل مقابل الترحيل العكسي</h2>
+
+        <div class="comparison-grid">
+          <div class="comparison-card to-opentofu">
+            <h4>🚀 إلى OpenTofu</h4>
+            <ol>
+              <li>نسخة احتياطية من <code>terraform.tfstate</code></li>
+              <li>تثبيت OpenTofu</li>
+              <li><code>tofu init</code></li>
+              <li><code>tofu plan</code> → فحص</li>
+              <li>اختبار بتغيير صغير</li>
+              <li><code>tofu apply</code> → اكتمال الترحيل</li>
+            </ol>
+          </div>
+          <div class="comparison-card to-terraform">
+            <h4>↩️ إلى Terraform</h4>
+            <ol>
+              <li>نسخة احتياطية من حالة OpenTofu</li>
+              <li>التأكد من تثبيت Terraform</li>
+              <li><code>terraform init</code></li>
+              <li><code>terraform plan</code> → فحص</li>
+              <li>استعادة التغييرات إن لزم</li>
+              <li><code>terraform apply</code> → اكتمال العودة</li>
+            </ol>
+          </div>
+        </div>
+
+        <table class="command-table">
+          <thead>
+            <tr>
+              <th>الأمر</th>
+              <th>Terraform</th>
+              <th>OpenTofu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>التهيئة</strong></td>
+              <td><code>terraform init</code></td>
+              <td><code>tofu init</code></td>
+            </tr>
+            <tr>
+              <td><strong>الخطة</strong></td>
+              <td><code>terraform plan</code></td>
+              <td><code>tofu plan</code></td>
+            </tr>
+            <tr>
+              <td><strong>التطبيق</strong></td>
+              <td><code>terraform apply</code></td>
+              <td><code>tofu apply</code></td>
+            </tr>
+            <tr>
+              <td><strong>الحذف</strong></td>
+              <td><code>terraform destroy</code></td>
+              <td><code>tofu destroy</code></td>
+            </tr>
+            <tr>
+              <td><strong>الإصدار</strong></td>
+              <td><code>terraform version</code></td>
+              <td><code>tofu version</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section 6: Troubleshooting -->
+      <div class="section">
+        <h2>🛠️ التعامل مع المشاكل (Troubleshooting)</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          إذا واجهت مشاكل أثناء الترحيل، هناك عدة أماكن للحصول على المساعدة.
+        </p>
+
+        <h3>📋 الإبلاغ عن الأخطاء</h3>
+        <div class="code-block">
+          <pre><span class="comment"># الإبلاغ عن الأخطاء في GitHub</span>
+<span class="string">https://github.com/opentofu/opentofu/issues</span>
+
+<span class="comment"># أنواع البلاغات:</span>
+<span class="comment"># - Bug Report: خطأ في البرنامج</span>
+<span class="comment"># - Feature Request: طلب ميزة جديدة</span>
+<span class="comment"># - RFC: اقتراح تحسين</span>
+<span class="comment"># - Security Vulnerability: ثغرة أمنية</span></pre>
+        </div>
+
+        <div class="tip-box">
+          <h4>💡 نصائح للإبلاغ الجيد</h4>
+          <ul style="margin-right: 20px; margin-top: 10px">
+            <li>حدد إصدار OpenTofu الذي تستخدمه</li>
+            <li>صف المشكلة بتفصيل</li>
+            <li>أرفق رسائل الخطأ الكاملة</li>
+            <li>أرفق خطوات إعادة إنتاج المشكلة</li>
+            <li>اتبع إرشادات البلاغ المحددة</li>
+          </ul>
+        </div>
+
+        <h3>👥 الانضمام إلى المجتمع</h3>
+        <table class="command-table">
+          <thead>
+            <tr>
+              <th>المنصة</th>
+              <th>الاستخدام</th>
+              <th>الرابط</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>OpenTofu Slack</strong></td>
+              <td>مناقشة المشاكل مباشرة</td>
+              <td><code>opentofu.slack.com</code></td>
+            </tr>
+            <tr>
+              <td><strong>GitHub Discussions</strong></td>
+              <td>أسئلة عامة ونقاشات</td>
+              <td><code>github.com/opentofu/opentofu/discussions</code></td>
+            </tr>
+            <tr>
+              <td><strong>قسم Q&A</strong></td>
+              <td>أسئلة حول الترحيل من Terraform</td>
+              <td><code>المجموعة المناسبة في Discussions</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section 7: Common Mistakes -->
+      <div class="section">
+        <h2>⚠️ أخطاء شائعة يجب تجنبها</h2>
+
+        <div class="warning-box">
+          <h4>❌ خطأ 1: الترحيل بدون نسخة احتياطية</h4>
+          <p>
+            <strong>دائماً</strong> أنشئ نسخة احتياطية من ملف الحالة قبل
+            الترحيل. إذا فشلت العملية، يمكنك الاستعادة من النسخة الاحتياطية.
+          </p>
+          <div class="code-block">
+            <pre><span class="comment"># ❌ خطر - بدون نسخة احتياطية</span>
+<span class="keyword">tofu init</span>
+
+<span class="comment"># ✅ آمن - مع نسخة احتياطية</span>
+<span class="keyword">tar</span> <span class="flag">-czf</span> tfstate-backup.tar.gz terraform.tfstate
+<span class="keyword">tofu init</span></pre>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <h4>❌ خطأ 2: اختبار الترحيل على موارد حرجة</h4>
+          <p>
+            لا تختبر الترحيل بتغيير موارد حرجة مثل قواعد البيانات أو خوادم
+            الإنتاج. استخدم مورداً بسيطاً مثل ملف محلي أو مورد اختباري.
+          </p>
+        </div>
+
+        <div class="warning-box">
+          <h4>❌ خطأ 3: نسيان فحص الخطة</h4>
+          <p>
+            بعد <code>tofu init</code>، شغل دائماً <code>tofu plan</code> للتأكد
+            من عدم وجود تغييرات غير متوقعة. إذا ظهرت تغييرات غير متوقعة، لا تكمل
+            الترحيل!
+          </p>
+        </div>
+
+        <div class="warning-box">
+          <h4>❌ خطأ 4: استخدام إصدارات غير متوافقة</h4>
+          <p>
+            تأكد من أن إصدار Terraform الذي تستخدمه متوافق مع OpenTofu. الإصدار
+            1.6 هو نقطة التوافق. إذا كنت تستخدم إصداراً أقدم، قم بالترقية أولاً.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 8: Interview Questions -->
+      <div class="section">
+        <h2>🎤 أسئلة مقابلات مهمة</h2>
+
+        <div class="interview-box">
+          <h4>سؤال 1: ما هي خطوات الترحيل من Terraform إلى OpenTofu؟</h4>
+          <p>
+            1. إنشاء نسخة احتياطية من ملف الحالة.<br />
+            2. تثبيت OpenTofu.<br />
+            3. تشغيل <code>tofu init</code> لتهيئة المشروع.<br />
+            4. فحص الخطة بـ <code>tofu plan</code>.<br />
+            5. اختبار بتغيير صغير غير حرج.<br />
+            6. تطبيق التغييرات بـ <code>tofu apply</code>.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>سؤال 2: ما هو إصدار Terraform المتوافق مع OpenTofu؟</h4>
+          <p>
+            الإصدار <strong>1.6</strong> من Terraform متوافق مع OpenTofu 1.6.
+            إذا كنت تستخدم إصداراً أقدم، يجب الترقية إلى 1.6 أولاً قبل الترحيل.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>سؤال 3: لماذا نحتاج إلى نسخة احتياطية قبل الترحيل؟</h4>
+          <p>
+            لأن ملف الحالة يحتوي على جميع معلومات البنية التحتية. إذا فشلت عملية
+            الترحيل أو حدثت مشكلة، يمكن استعادة الحالة من النسخة الاحتياطية
+            والعودة إلى الوضع السابق.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>سؤال 4: هل يمكن العودة من OpenTofu إلى Terraform؟</h4>
+          <p>
+            نعم، بنفس السهولة:<br />
+            1. إنشاء نسخة احتياطية من حالة OpenTofu.<br />
+            2. تشغيل <code>terraform init</code>.<br />
+            3. فحص الخطة بـ <code>terraform plan</code>.<br />
+            4. الاستمرار مع Terraform.<br />
+            <strong>ملاحظة:</strong> قد يحدث تباعد (divergence) بين ما تم إنشاؤه
+            بـ OpenTofu وما تتوقعه Terraform.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>سؤال 5: أين يمكن الحصول على المساعدة إذا واجهت مشاكل؟</h4>
+          <p>
+            • <strong>GitHub Issues:</strong> للإبلاغ عن الأخطاء (Bug
+            Reports)<br />
+            • <strong>OpenTofu Slack:</strong> للمناقشة المباشرة مع المجتمع<br />
+            • <strong>GitHub Discussions:</strong> للأسئلة العامة والنقاشات
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 9: Quick Reference -->
+      <div class="section">
+        <h2>⚡ مرجع سريع</h2>
+
+        <div class="code-block">
+          <pre><span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># الترحيل إلى OpenTofu</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># 1. نسخة احتياطية</span>
+<span class="keyword">tar</span> <span class="flag">-czf</span> tfstate.tar.gz terraform.tfstate
+
+<span class="comment"># 2. تثبيت OpenTofu (Ubuntu مثال)</span>
+<span class="keyword">curl</span> <span class="flag">-fsSL</span> https://get.opentofu.org/install-opentofu.sh <span class="flag">-o</span> install.sh
+<span class="keyword">chmod</span> <span class="flag">+x</span> install.sh && <span class="keyword">./install.sh</span>
+
+<span class="comment"># 3. التحقق من التثبيت</span>
+<span class="keyword">tofu</span> <span class="flag">--version</span>
+
+<span class="comment"># 4. التهيئة والفحص</span>
+<span class="keyword">tofu init</span>
+<span class="keyword">tofu plan</span>
+
+<span class="comment"># 5. اختبار بتغيير صغير</span>
+<span class="keyword">tofu apply</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># الترحيل العكسي إلى Terraform</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># 1. نسخة احتياطية</span>
+<span class="keyword">tar</span> <span class="flag">-czf</span> terraform.tfstate.tar.gz terraform.tfstate
+
+<span class="comment"># 2. التهيئة مع Terraform</span>
+<span class="keyword">terraform init</span>
+
+<span class="comment"># 3. الفحص</span>
+<span class="keyword">terraform plan</span>
+
+<span class="comment"># 4. الاستمرار</span>
+<span class="keyword">terraform apply</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># استكشاف الأخطاء</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># الإبلاغ عن الأخطاء</span>
+<span class="string">https://github.com/opentofu/opentofu/issues</span>
+
+<span class="comment"># المجتمع</span>
+<span class="string">OpenTofu Slack</span>
+<span class="string">GitHub Discussions</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># التوافق</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># الإصدارات المتوافقة</span>
+<span class="string">Terraform 1.6 ⇄ OpenTofu 1.6</span>
+
+<span class="comment"># الأوامر المكافئة</span>
+<span class="keyword">terraform init</span>    <span class="comment"># ←→</span>    <span class="keyword">tofu init</span>
+<span class="keyword">terraform plan</span>    <span class="comment"># ←→</span>    <span class="keyword">tofu plan</span>
+<span class="keyword">terraform apply</span>   <span class="comment"># ←→</span>    <span class="keyword">tofu apply</span>
+<span class="keyword">terraform destroy</span> <span class="comment"># ←→</span>    <span class="keyword">tofu destroy</span>
+<span class="keyword">terraform version</span> <span class="comment"># ←→</span>    <span class="keyword">tofu version</span></pre>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="nav-links">
+        <a href="10-tainting-import-debugging.html"
+          >→ السابق: الـ Tainting والـ Import والـ Debugging</a
+        >
+        <a href="#">التالي: ملخص شامل للمراجعة النهائية ←</a>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p>
+          📚 <strong>المصدر الرئيسي:</strong>
+          <a href="https://opentofu.org/docs/intro/migration/" target="_blank"
+            >OpenTofu Migration Guide</a
+          >
+          |
+          <a href="https://opentofu.org/docs/cli/install/" target="_blank"
+            >Installation Guide</a
+          >
+        </p>
+        <p style="margin-top: 10px">
+          🎓 <strong>الهدف:</strong> الحصول على شهادة DevOps ووظيفة في مجال الـ
+          Cloud
+        </p>
+        <p
+          style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light)"
+        >
+          تم الإنشاء بواسطة Teaching Workspace | المرجع رقم: 11
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,684 @@
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenTofu - Tainting, Import & Debugging</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+      .flow-box {
+          background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+          border: 2px solid var(--primary);
+          border-radius: 10px;
+          padding: 15px 20px;
+          text-align: center;
+          min-width: 120px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🔧 OpenTofu - Tainting, Import & Debugging</h1>
+        <p>مرجع شامل للموارد الملوثة، استيراد الموارد، والتصحيح</p>
+      </header>
+
+      <!-- Section 1: Overview -->
+      <div class="section">
+        <h2>📋 نظرة عامة (Overview)</h2>
+        <p style="margin-bottom: 20px; color: var(--text-light)">
+          الـ Tainting يحدث عندما يفشل إنشاء مورد. الـ Import يُستخدم لجلب موارد
+          موجودة مسبقاً إلى إدارة OpenTofu. الـ Debugging يساعد في اكتشاف
+          الأخطاء عبر الـ logging.
+        </p>
+
+        <div class="concepts-grid">
+          <div class="concept-card taint">
+            <h4>Tainted</h4>
+            <p>مورد فشل إنشاؤه وسيُعاد إنشاؤه</p>
+          </div>
+          <div class="concept-card replace">
+            <h4>--replace</h4>
+            <p>إجبار إعادة إنشاء مورد</p>
+          </div>
+          <div class="concept-card import">
+            <h4>import</h4>
+            <p>استيراد موارد موجودة مسبقاً</p>
+          </div>
+          <div class="concept-card debug">
+            <h4>TF_LOG</h4>
+            <p>تفعيل الـ logging للتصحيح</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Tainting -->
+      <div class="section">
+        <h2>🔴 الـ Tainting (الموارد الملوثة)</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          عندما يفشل إنشاء مورد لأي سبب (مثل فشل الـ provisioner)، يقوم OpenTofu
+          بتعليم المورد كـ <strong>tainted</strong>. في الـ
+          <code>apply</code> التالي، سيتم إعادة إنشاء المورد بالكامل.
+        </p>
+
+        <h3>📄 مثال: فشل الـ provisioner</h3>
+        <div class="code-block">
+          <pre><span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"webserver"</span> {
+  <span class="argument">ami</span>           = <span class="string">"ami-0edab43b6fa892279"</span>
+  <span class="argument">instance_type</span> = <span class="string">"t2.micro"</span>
+
+  <span class="comment"># ← provisioner بمسار خاطئ</span>
+  <span class="keyword">provisioner</span> <span class="string">"local-exec"</span> {
+    <span class="argument">command</span> = <span class="string">"echo ${aws_instance.webserver.public_ip} >> /invalid/path/ips.txt"</span>
+    <span class="comment">#                                          ↑ مسار غير موجود!</span>
+  }
+}</pre>
+        </div>
+
+        <h3>🔍 النتيجة عند فشل الـ apply</h3>
+        <div class="code-block">
+          <pre><span class="keyword">tofu apply</span>
+
+<span class="error">Error: local-exec provisioner error</span>
+<span class="error">  with aws_instance.webserver,</span>
+<span class="error">  on main.tf line 8, in resource "aws_instance" "webserver":</span>
+<span class="error">  8:   provisioner "local-exec" {</span>
+
+<span class="comment"># المورد تم إنشاؤه لكن الـ provisioner فشل</span>
+<span class="comment"># → المورد أصبح tainted</span></pre>
+        </div>
+
+        <h3>🔍 عند تشغيل <code>tofu plan</code> مرة أخرى</h3>
+        <div class="code-block">
+          <pre><span class="keyword">tofu plan</span>
+
+<span class="warning"># aws_instance.webserver is tainted, so must be replaced</span>
+<span class="warning">-/+ resource "aws_instance" "webserver" {</span>
+      <span class="comment"># ... سيتم إعادة إنشاء المورد بالكامل</span>
+<span class="warning">}</span>
+
+<span class="comment">Plan: 1 to add, 0 to change, 1 to destroy.</span></pre>
+        </div>
+
+        <div class="warning-box">
+          <h4>⚠️ نقطة مهمة</h4>
+          <p>
+            حتى لو كان المورد نفسه (مثل EC2 instance) تم إنشاؤه بنجاح، إذا فشل
+            أي خطوة لاحقة (مثل الـ provisioner)، يتم تعليم المورد كـ
+            <strong>tainted</strong> وسيتم إعادة إنشائه بالكامل في الـ
+            <code>apply</code> التالي!
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 3: Replace and Untaint -->
+      <div class="section">
+        <h2>🔄 الإجبار على إعادة الإنشاء: --replace و untaint</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          يمكنك إجبار إعادة إنشاء مورد معين، أو إلغاء الـ taint إذا تم إصلاح
+          المشكلة.
+        </p>
+
+        <h3>📄 <code>tofu apply -replace</code></h3>
+        <p style="margin-bottom: 10px; color: var(--text-light)">
+          يُستخدم لإجبار إعادة إنشاء مورد معين. هذا هو البديل الحديث لـ
+          <code>tofu taint</code> (الذي أصبح <strong>deprecated</strong>).
+        </p>
+        <div class="code-block">
+          <pre><span class="comment"># إجبار إعادة إنشاء مورد معين</span>
+<span class="keyword">tofu apply</span> <span class="flag">-replace</span>=<span class="resource">aws_instance.project_b</span>
+
+<span class="comment"># الصيغة العامة</span>
+<span class="keyword">tofu apply</span> <span class="flag">-replace</span>=<span class="resource">resourceType.resourceName</span></pre>
+        </div>
+
+        <div class="tip-box">
+          <h4>💡 متى تستخدم <code>-replace</code>؟</h4>
+          <ul style="margin-right: 20px; margin-top: 10px">
+            <li>عندما يتم تعديل المورد يدوياً خارج OpenTofu</li>
+            <li>عندما تريد إعادة إنشاء مورد بدون حذفه أولاً</li>
+            <li>عندما يكون المورد في حالة غير متسقة</li>
+          </ul>
+        </div>
+
+        <h3>📄 <code>tofu untaint</code></h3>
+        <p style="margin-bottom: 10px; color: var(--text-light)">
+          يُستخدم لإلغاء الـ taint عن مورد، بحيث لا يتم إعادة إنشائه في الـ
+          <code>apply</code> التالي.
+        </p>
+        <div class="code-block">
+          <pre><span class="comment"># إلغاء الـ taint عن مورد</span>
+<span class="keyword">tofu untaint</span> <span class="resource">aws_instance.webserver</span>
+
+<span class="comment"># الآن لن يتم إعادة إنشاء المورد في الـ apply التالي</span></pre>
+        </div>
+
+        <div class="flow-diagram">
+          <div
+            class="flow-box"
+            style="
+              border-color: #ef4444;
+              background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            "
+          >
+            <h5 style="color: #dc2626">tainted</h5>
+            <p>المورد فشل وسيُعاد إنشاؤه</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div
+            class="flow-box"
+            style="
+              border-color: #8b5cf6;
+              background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+            "
+          >
+            <h5 style="color: #7c3aed">tofu untaint</h5>
+            <p>إلغاء الـ taint</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div
+            class="flow-box"
+            style="
+              border-color: #22c55e;
+              background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            "
+          >
+            <h5 style="color: #16a34a">normal</h5>
+            <p>المورد لن يُعاد إنشاؤه</p>
+          </div>
+        </div>
+
+        <table class="command-table">
+          <thead>
+            <tr>
+              <th>الأمر</th>
+              <th>الوظيفة</th>
+              <th>متى تستخدمه</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>tofu taint</code></td>
+              <td>تعليم مورد كـ tainted (قديم)</td>
+              <td>⚠️ deprecated - لا تستخدمه</td>
+            </tr>
+            <tr>
+              <td><code>tofu apply -replace</code></td>
+              <td>إجبار إعادة إنشاء مورد</td>
+              <td>✅ البديل الحديث</td>
+            </tr>
+            <tr>
+              <td><code>tofu untaint</code></td>
+              <td>إلغاء الـ taint</td>
+              <td>عند إصلاح المشكلة يدوياً</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section 4: Import -->
+      <div class="section">
+        <h2>📥 الـ Import (استيراد الموارد)</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          يُستخدم لجلب موارد موجودة مسبقاً (أُنشئت يدوياً أو بأدوات أخرى) إلى
+          إدارة OpenTofu.
+        </p>
+
+        <h3>📄 الطريقة 1: <code>tofu import</code> command</h3>
+        <div class="code-block">
+          <pre><span class="comment"># الخطوة 1: إنشاء resource block فارغ</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"webserver2"</span> {
+  <span class="comment"># ← فارغ، سيتم ملؤه بعد الاستيراد</span>
+}
+
+<span class="comment"># الخطوة 2: تشغيل أمر الاستيراد</span>
+<span class="keyword">tofu import</span> <span class="resource">aws_instance.webserver2</span> <span class="string">i-0123456789abcdef0</span>
+<span class="comment">#              ↑                          ↑</span>
+<span class="comment">#              عنوان المورد              المعرف الفريد (من الـ Console)</span>
+
+<span class="comment"># النتيجة: المورد أصبح في الـ state</span></pre>
+        </div>
+
+        <div class="warning-box">
+          <h4>⚠️ تنبيه مهم</h4>
+          <p>
+            <code>tofu import</code> <strong>لا يحدّث</strong> ملفات الإعداد!
+            يجب عليك يدوياً ملء الـ <code>resource</code> block بجميع السمات
+            (مثل <code>ami</code>, <code>instance_type</code>,
+            <code>tags</code>).
+          </p>
+        </div>
+
+        <h3>📄 الطريقة 2: <code>import</code> block (الطريقة الجديدة)</h3>
+        <div class="code-block">
+          <pre><span class="comment"># import block</span>
+<span class="keyword">import</span> {
+  <span class="argument">to</span> = <span class="resource">aws_instance.webserver2</span>
+  <span class="argument">id</span> = <span class="string">"i-0123456789abcdef0"</span>
+}
+
+<span class="comment"># resource block (يجب أن يطابق العنوان في الـ import)</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"webserver2"</span> {
+  <span class="argument">ami</span>           = <span class="string">"ami-0c9bfc21ac5bf10eb"</span>
+  <span class="argument">instance_type</span> = <span class="string">"t2.large"</span>
+  <span class="argument">tags</span> = {
+    <span class="argument">Name</span> = <span class="string">"webserver2"</span>
+  }
+}</pre>
+        </div>
+
+        <div class="tip-box">
+          <h4>💡 الفرق بين الطريقتين</h4>
+          <table class="command-table">
+            <thead>
+              <tr>
+                <th>المعيار</th>
+                <th><code>tofu import</code></th>
+                <th><code>import</code> block</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>متى يعمل؟</strong></td>
+                <td>عند تشغيل الأمر يدوياً</td>
+                <td>أثناء <code>plan</code> و <code>apply</code></td>
+              </tr>
+              <tr>
+                <td><strong>يمكن إزالته؟</strong></td>
+                <td>غير قابل للإزالة (أمر فقط)</td>
+                <td>يمكن إزالته بعد الاستيراد</td>
+              </tr>
+              <tr>
+                <td><strong>التوثيق</strong></td>
+                <td>لا يترك أثراً</td>
+                <td>يبقى كسجل في الكود</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>📄 مثال عملي كامل</h3>
+        <div class="code-block">
+          <pre><span class="comment"># 1. إنشاء resource block فارغ</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"jade-mw"</span> {
+  <span class="comment"># فارغ</span>
+}
+
+<span class="comment"># 2. تشغيل الاستيراد</span>
+<span class="keyword">tofu import</span> <span class="resource">aws_instance.jade-mw</span> <span class="string">i-47a8764efa9248c14</span>
+
+<span class="comment"># 3. ملء الـ resource block من الـ state</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"jade-mw"</span> {
+  <span class="argument">ami</span>           = <span class="string">"ami-082b3eca746b12a89"</span>
+  <span class="argument">instance_type</span> = <span class="string">"t2.large"</span>
+  <span class="argument">key_name</span>      = <span class="string">"jade"</span>
+  <span class="argument">tags</span> = {
+    <span class="argument">Name</span> = <span class="string">"jade-mw"</span>
+  }
+}
+
+<span class="comment"># 4. التحقق من أن كل شيء متطابق</span>
+<span class="keyword">tofu plan</span>
+<span class="comment"># يجب أن يعرض: No changes</span></pre>
+        </div>
+      </div>
+
+      <!-- Section 5: Debugging -->
+      <div class="section">
+        <h2>🐛 الـ Debugging (التصحيح)</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          OpenTofu يوفر نظام <strong>logging</strong> قوي يساعد في اكتشاف
+          الأخطاء. يتم تفعيله عبر متغيرات البيئة.
+        </p>
+
+        <h3>📄 تفعيل الـ Logging</h3>
+        <div class="code-block">
+          <pre><span class="comment"># Linux/Mac</span>
+<span class="keyword">export</span> TF_LOG=<span class="string">"DEBUG"</span>
+<span class="keyword">tofu apply</span>
+
+<span class="comment"># أو مع تحديد مسار الـ log</span>
+<span class="keyword">export</span> TF_LOG=<span class="string">"ERROR"</span>
+<span class="keyword">export</span> TF_LOG_PATH=<span class="string">"/tmp/opentofu.log"</span>
+<span class="keyword">tofu apply</span>
+
+<span class="comment"># Windows (PowerShell)</span>
+<span class="keyword">$env:TF_LOG</span> = <span class="string">"DEBUG"</span>
+<span class="keyword">$env:TF_LOG_PATH</span> = <span class="string">"C:\temp\opentofu.log"</span>
+<span class="keyword">tofu apply</span></pre>
+        </div>
+
+        <h3>📊 مستويات الـ Logging</h3>
+        <div class="log-levels">
+          <div class="log-level trace">
+            <span>TRACE</span>
+            <span class="description">← الأكثر تفصيلاً، يعرض كل شيء</span>
+          </div>
+          <div class="log-level debug">
+            <span>DEBUG</span>
+            <span class="description">← معلومات تصحيح مفصلة</span>
+          </div>
+          <div class="log-level info">
+            <span>INFO</span>
+            <span class="description">← معلومات عامة عن العملية</span>
+          </div>
+          <div class="log-level warn">
+            <span>WARN</span>
+            <span class="description">← تحذيرات فقط</span>
+          </div>
+          <div class="log-level error">
+            <span>ERROR</span>
+            <span class="description">← الأخطاء فقط (الأقل تفصيلاً)</span>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <h4>⚠️ تنبيه مهم</h4>
+          <p>
+            تحديد <code>TF_LOG_PATH</code> فقط <strong>لا يكفي</strong>! يجب
+            أيضاً تحديد <code>TF_LOG</code> مع مستوى الـ logging. وإلا لن يتم
+            إنشاء ملف الـ log.
+          </p>
+        </div>
+
+        <h3>📄 مثال عملي كامل</h3>
+        <div class="code-block">
+          <pre><span class="comment"># تفعيل الـ logging بمستوى ERROR مع حفظه في ملف</span>
+<span class="keyword">export</span> TF_LOG=<span class="string">"ERROR"</span>
+<span class="keyword">export</span> TF_LOG_PATH=<span class="string">"/tmp/project_a.log"</span>
+
+<span class="comment"># تشغيل الأوامر</span>
+<span class="keyword">tofu init</span>
+<span class="keyword">tofu apply</span>
+
+<span class="comment"># عرض الـ log</span>
+<span class="keyword">cat</span> /tmp/project_a.log
+
+<span class="comment"># النتيجة:</span>
+<span class="error">2025-06-21T12:30:15.123+0200 [ERROR] aws_instance.ProjectA: Creating...</span>
+<span class="error">2025-06-21T12:30:16.456+0200 [ERROR] Error: AuthFailure: ...</span></pre>
+        </div>
+
+        <div class="tip-box">
+          <h4>💡 نصيحة للمقابلات</h4>
+          <p>
+            <strong>أي مستوى من الـ logging يعرض أكثر التفاصيل؟</strong><br />
+            الإجابة: <code>TRACE</code> - يعرض جميع المعلومات بما في ذلك الطلبات
+            والاستجابات الكاملة.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 6: Practical Example -->
+      <div class="section">
+        <h2>🎯 مثال عملي كامل: استكشاف الأخطاء وإصلاحها</h2>
+
+        <h3>📄 السيناريو: مورد tainted</h3>
+        <div class="code-block">
+          <pre><span class="comment"># 1. تشغيل apply وفشل الـ provisioner</span>
+<span class="keyword">tofu apply</span>
+<span class="error"># Error: local-exec provisioner error</span>
+<span class="error"># → المورد أصبح tainted</span>
+
+<span class="comment"># 2. تشغيل plan لرؤية الـ taint</span>
+<span class="keyword">tofu plan</span>
+<span class="warning"># aws_instance.ProjectB is tainted, so must be replaced</span>
+
+<span class="comment"># 3. إصلاح المشكلة في الكود</span>
+<span class="comment"># (مثلاً: تصحيح مسار الـ provisioner)</span>
+
+<span class="comment"># 4. إعادة إنشاء المورد</span>
+<span class="keyword">tofu apply</span> <span class="flag">-replace</span>=<span class="resource">aws_instance.ProjectB</span>
+
+<span class="comment"># أو إذا أردت إلغاء الـ taint فقط</span>
+<span class="keyword">tofu untaint</span> <span class="resource">aws_instance.ProjectB</span></pre>
+        </div>
+
+        <h3>📄 السيناريو: استيراد مورد موجود</h3>
+        <div class="code-block">
+          <pre><span class="comment"># 1. إيجاد معرف المورد من الـ Console</span>
+<span class="comment"># Instance ID: i-47a8764efa9248c14</span>
+
+<span class="comment"># 2. إنشاء resource block فارغ</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"existing-server"</span> {
+}
+
+<span class="comment"># 3. استيراد المورد</span>
+<span class="keyword">tofu import</span> <span class="resource">aws_instance.existing-server</span> <span class="string">i-47a8764efa9248c14</span>
+
+<span class="comment"># 4. عرض الـ state للحصول على جميع السمات</span>
+<span class="keyword">tofu show</span>
+
+<span class="comment"># 5. ملء الـ resource block بالسمات</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"existing-server"</span> {
+  <span class="argument">ami</span>           = <span class="string">"ami-0c9bfc21ac5bf10eb"</span>
+  <span class="argument">instance_type</span> = <span class="string">"t2.large"</span>
+  <span class="argument">tags</span> = {
+    <span class="argument">Name</span> = <span class="string">"existing-server"</span>
+  }
+}
+
+<span class="comment"># 6. التحقق</span>
+<span class="keyword">tofu plan</span>
+<span class="success"># No changes. Your infrastructure matches the configuration.</span></pre>
+        </div>
+      </div>
+
+      <!-- Section 7: Common Mistakes -->
+      <div class="section">
+        <h2>⚠️ أخطاء شائعة يجب تجنبها</h2>
+
+        <div class="warning-box">
+          <h4>❌ خطأ 1: استخدام <code>tofu taint</code> (deprecated)</h4>
+          <div class="code-block">
+            <pre><span class="comment"># ❌ قديم - لا تستخدمه</span>
+<span class="keyword">tofu taint</span> <span class="resource">aws_instance.webserver</span>
+
+<span class="comment"># ✅ البديل الحديث</span>
+<span class="keyword">tofu apply</span> <span class="flag">-replace</span>=<span class="resource">aws_instance.webserver</span></pre>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <h4>❌ خطأ 2: نسيان ملء الـ resource block بعد الاستيراد</h4>
+          <p>
+            <code>tofu import</code> يضيف المورد إلى الـ
+            <strong>state</strong> فقط. يجب يدوياً ملء الـ
+            <code>resource</code> block بجميع السمات. وإلا سيعطي
+            <code>tofu apply</code> خطأ!
+          </p>
+        </div>
+
+        <div class="warning-box">
+          <h4>
+            ❌ خطأ 3: تحديد <code>TF_LOG_PATH</code> بدون <code>TF_LOG</code>
+          </h4>
+          <div class="code-block">
+            <pre><span class="comment"># ❌ خطأ - لن يتم إنشاء ملف الـ log</span>
+<span class="keyword">export</span> TF_LOG_PATH=<span class="string">"/tmp/debug.log"</span>
+
+<span class="comment"># ✅ صحيح - يجب تحديد كلا المتغيرين</span>
+<span class="keyword">export</span> TF_LOG=<span class="string">"DEBUG"</span>
+<span class="keyword">export</span> TF_LOG_PATH=<span class="string">"/tmp/debug.log"</span></pre>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <h4>❌ خطأ 4: تشغيل <code>tofu untaint</code> بدون إصلاح المشكلة</h4>
+          <p>
+            إذا ألغيت الـ taint دون إصلاح السبب الجذري، سيفشل المورد مرة أخرى في
+            الـ <code>apply</code> التالي وسيصبح tainted مرة أخرى!
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 8: Interview Questions -->
+      <div class="section">
+        <h2>🎤 أسئلة مقابلات مهمة</h2>
+
+        <div class="interview-box">
+          <h4>سؤال 1: ما هو الـ Tainting؟</h4>
+          <p>
+            عندما يفشل إنشاء مورد (أو أي خطوة أثناء الإنشاء مثل الـ
+            provisioner)، يتم تعليم المورد كـ <strong>tainted</strong>. في الـ
+            <code>apply</code> التالي، سيتم إعادة إنشاء المورد بالكامل.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>
+            سؤال 2: ما الفرق بين <code>tofu taint</code> و
+            <code>tofu apply -replace</code>؟
+          </h4>
+          <p>
+            <code>tofu taint</code> أصبح <strong>deprecated</strong>.<br />
+            البديل الحديث هو
+            <code>tofu apply -replace=resourceType.resourceName</code>
+            الذي يجمع بين الـ taint والـ apply في خطوة واحدة.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>سؤال 3: ما هي خطوات استيراد مورد موجود؟</h4>
+          <p>
+            1. إنشاء <code>resource</code> block فارغ في الكود.<br />
+            2. تشغيل
+            <code>tofu import resourceType.resourceName resource_id</code
+            >.<br />
+            3. ملء الـ <code>resource</code> block بجميع السمات من الـ
+            <code>tofu show</code>.<br />
+            4. التحقق عبر <code>tofu plan</code> (يجب أن يعرض No changes).
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>سؤال 4: كيف تفعّل الـ logging في OpenTofu؟</h4>
+          <p>
+            عبر متغيرات البيئة:<br />
+            • <code>TF_LOG</code>: مستوى الـ logging (TRACE, DEBUG, INFO, WARN,
+            ERROR)<br />
+            • <code>TF_LOG_PATH</code>: مسار حفظ الـ log (اختياري)<br />
+            <strong>ملاحظة:</strong> يجب تحديد <code>TF_LOG</code> حتى لو حددت
+            <code>TF_LOG_PATH</code>.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>
+            سؤال 5: ما الفرق بين <code>tofu import</code> والـ
+            <code>import</code> block؟
+          </h4>
+          <p>
+            <strong><code>tofu import</code>:</strong> أمر يُشغل يدوياً مرة
+            واحدة.<br />
+            <strong><code>import</code> block:</strong> يُعالج أثناء
+            <code>plan</code> و <code>apply</code>، ويبقى كسجل في الكود يمكن
+            إزالته لاحقاً.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 9: Quick Reference -->
+      <div class="section">
+        <h2>⚡ مرجع سريع</h2>
+
+        <div class="code-block">
+          <pre><span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Tainting</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># رؤية الـ taint</span>
+<span class="keyword">tofu plan</span>  <span class="comment"># يعرض "is tainted, so must be replaced"</span>
+
+<span class="comment"># إجبار إعادة الإنشاء (البديل الحديث)</span>
+<span class="keyword">tofu apply</span> <span class="flag">-replace</span>=<span class="resource">aws_instance.webserver</span>
+
+<span class="comment"># إلغاء الـ taint</span>
+<span class="keyword">tofu untaint</span> <span class="resource">aws_instance.webserver</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Import</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># الطريقة 1: الأمر</span>
+<span class="keyword">tofu import</span> <span class="resource">aws_instance.name</span> <span class="string">i-1234567890abcdef0</span>
+
+<span class="comment"># الطريقة 2: الـ import block</span>
+<span class="keyword">import</span> {
+  <span class="argument">to</span> = <span class="resource">aws_instance.name</span>
+  <span class="argument">id</span> = <span class="string">"i-1234567890abcdef0"</span>
+}
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Debugging</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># تفعيل الـ logging</span>
+<span class="keyword">export</span> TF_LOG=<span class="string">"TRACE"</span>      <span class="comment"># الأكثر تفصيلاً</span>
+<span class="keyword">export</span> TF_LOG=<span class="string">"DEBUG"</span>      <span class="comment"># معلومات تصحيح</span>
+<span class="keyword">export</span> TF_LOG=<span class="string">"INFO"</span>       <span class="comment"># معلومات عامة</span>
+<span class="keyword">export</span> TF_LOG=<span class="string">"WARN"</span>       <span class="comment"># تحذيرات فقط</span>
+<span class="keyword">export</span> TF_LOG=<span class="string">"ERROR"</span>      <span class="comment"># أخطاء فقط</span>
+
+<span class="comment"># حفظ الـ log في ملف</span>
+<span class="keyword">export</span> TF_LOG_PATH=<span class="string">"/tmp/debug.log"</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Workflow كامل</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># عند فشل مورد</span>
+<span class="keyword">tofu plan</span>                      <span class="comment"># 1. رؤية الـ taint</span>
+<span class="comment"># إصلاح الكود</span>                  <span class="comment"># 2. إصلاح المشكلة</span>
+<span class="keyword">tofu apply</span> <span class="flag">-replace</span>=<span class="resource">...</span>      <span class="comment"># 3. إعادة الإنشاء</span>
+
+<span class="comment"># عند استيراد مورد</span>
+<span class="keyword">tofu import</span> <span class="resource">...</span> <span class="string">...</span>           <span class="comment"># 1. الاستيراد</span>
+<span class="keyword">tofu show</span>                     <span class="comment"># 2. الحصول على السمات</span>
+<span class="comment"># ملء الـ resource block</span>       <span class="comment"># 3. تحديث الكود</span>
+<span class="keyword">tofu plan</span>                     <span class="comment"># 4. التحقق</span></pre>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="nav-links">
+        <a href="09-dynamic-blocks-splat.html"
+          >→ السابق: الـ Dynamic Blocks والـ Splat</a
+        >
+        <a href="#">التالي: الـ Migration من Terraform إلى OpenTofu ←</a>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p>
+          📚 <strong>المصدر الرئيسي:</strong>
+          <a
+            href="https://opentofu.org/docs/cli/commands/apply/"
+            target="_blank"
+            >apply -replace</a
+          >
+          |
+          <a
+            href="https://opentofu.org/docs/cli/commands/import/"
+            target="_blank"
+            >import</a
+          >
+          |
+          <a
+            href="https://opentofu.org/docs/internals/debugging/"
+            target="_blank"
+            >Debugging</a
+          >
+        </p>
+        <p style="margin-top: 10px">
+          🎓 <strong>الهدف:</strong> الحصول على شهادة DevOps ووظيفة في مجال الـ
+          Cloud
+        </p>
+        <p
+          style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light)"
+        >
+          تم الإنشاء بواسطة Teaching Workspace | المرجع رقم: 10
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

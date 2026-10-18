@@ -1,0 +1,623 @@
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenTofu - State & Lifecycle Rules</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .flow-box h5 {
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        .flow-box p {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+        .flow-arrow {
+            font-size: 2rem;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💾 OpenTofu - State & Lifecycle Rules</h1>
+            <p>مرجع شامل لمفهوم الحالة، قواعد دورة الحياة، وأوامر الحالة</p>
+        </header>
+
+        <!-- Section 1: Overview -->
+        <div class="section">
+            <h2>📋 نظرة عامة (Overview)</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">
+                الحالة (State) هي قلب عمل OpenTofu. بدونها، لا يمكن لـ OpenTofu معرفة ما تم إنشاؤه وما يجب تحديثه أو حذفه. قواعد دورة الحياة (Lifecycle Rules) تتحكم في كيفية إنشاء وحذف الموارد.
+            </p>
+
+            <div class="concepts-grid">
+                <div class="concept-card state">
+                    <h4>terraform.tfstate</h4>
+                    <p>ملف الحالة الافتراضي - مصدر الحقيقة</p>
+                </div>
+                <div class="concept-card lifecycle">
+                    <h4>Lifecycle Rules</h4>
+                    <p>قواعد تتحكم في إنشاء وحذف الموارد</p>
+                </div>
+                <div class="concept-card cmd">
+                    <h4>State Commands</h4>
+                    <p>أوامر لإدارة الحالة دون تحريرها يدوياً</p>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h4>ℹ️ حقائق أساسية عن الحالة</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li>الحالة <strong>إلزامية</strong> - لا يمكن تعطيلها</li>
+                    <li>يمكن تعطيل <strong>تحديث</strong> الحالة عبر <code>-refresh=false</code></li>
+                    <li>الحالة بصيغة <strong>JSON</strong></li>
+                    <li>تُخزن محلياً افتراضياً، لكن يجب نقلها إلى <strong>Remote Backend</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 2: State File -->
+        <div class="section">
+            <h2>💾 ملف الحالة (State File)</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                عند أول <code>tofu apply</code>، يتم إنشاء ملف الحالة تلقائياً في نفس مجلد ملفات الإعداد.
+            </p>
+
+            <h3>📄 الملفات الناتجة</h3>
+            <div class="code-block">
+                <pre><span class="comment"># ملف الحالة الرئيسي</span>
+terraform.tfstate
+
+<span class="comment"># النسخة الاحتياطية</span>
+terraform.tfstate.backup</pre>
+            </div>
+
+            <h3>🔍 محتوى ملف الحالة</h3>
+            <p style="margin-bottom: 10px; color: var(--text-light);">
+                ملف الحالة يحتوي على جميع تفاصيل البنية التحتية:
+            </p>
+            <table class="command-table">
+                <thead>
+                    <tr>
+                        <th>المحتوى</th>
+                        <th>الوصف</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Resource IDs</strong></td>
+                        <td>معرفات جميع الموارد المُنشأة</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Provider Info</strong></td>
+                        <td>معلومات الـ Provider المستخدم</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Resource Attributes</strong></td>
+                        <td>جميع سمات الموارد (IP, ARN, etc.)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Dependencies</strong></td>
+                        <td>الاعتماديات بين الموارد</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning-box">
+                <h4>⚠️ تحذيرات مهمة جداً</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li><strong>لا تضع ملف الحالة في Git!</strong> يحتوي معلومات حساسة (كلمات مرور، مفاتيح)</li>
+                    <li><strong>لا تحرر ملف الحالة يدوياً!</strong> استخدم الأوامر المخصصة</li>
+                    <li><strong>استخدم Remote Backend</strong> مثل S3, Azure Blob, GCS</li>
+                </ul>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ كيف تعمل الحالة مع الأوامر؟</h4>
+                <div class="flow-diagram">
+                    <div class="flow-box">
+                        <h5>1️⃣ tofu plan</h5>
+                        <p>يقرأ الحالة ويحدثها</p>
+                    </div>
+                    <div class="flow-arrow">←</div>
+                    <div class="flow-box">
+                        <h5>2️⃣ المقارنة</h5>
+                        <p>مع الملفات الإعدادية</p>
+                    </div>
+                    <div class="flow-arrow">←</div>
+                    <div class="flow-box">
+                        <h5>3️⃣ tofu apply</h5>
+                        <p>ينفذ التغييرات ويحدث الحالة</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: State Refresh -->
+        <div class="section">
+            <h2>🔄 تحديث الحالة (State Refresh)</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                قبل كل <code>plan</code> أو <code>apply</code>، يقوم OpenTofu بتحديث الحالة لتتطابق مع الواقع.
+            </p>
+
+            <h3>🔧 تعطيل التحديث (لحالات خاصة)</h3>
+            <div class="code-block">
+                <pre><span class="comment"># تعطيل تحديث الحالة (في البيئات الكبيرة فقط)</span>
+<span class="keyword">tofu apply</span> <span class="flag">-refresh=false</span></pre>
+            </div>
+
+            <div class="warning-box">
+                <h4>⚠️ متى تستخدم <code>-refresh=false</code>؟</h4>
+                <p>
+                    فقط في البيئات الكبيرة جداً (آلاف الموارد) حيث يستغرق التحديث وقتاً طويلاً.
+                    <strong>لا تستخدمه بشكل روتيني</strong> لأنه قد يؤدي إلى عدم اتساق بين الحالة والواقع.
+                </p>
+            </div>
+
+            <h3>🔧 أمر التحديث اليدوي</h3>
+            <div class="code-block">
+                <pre><span class="comment"># تحديث الحالة يدوياً (دون تعديل الموارد)</span>
+<span class="keyword">tofu refresh</span></pre>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 ما الفرق بين <code>tofu refresh</code> و <code>tofu apply</code>؟</h4>
+                <p>
+                    <code>tofu refresh</code> فقط يحدث ملف الحالة ليتطابق مع الواقع، لكنه <strong>لا يعدل</strong> أي موارد.
+                    بينما <code>tofu apply</code> قد يعدل الموارد بناءً على الاختلافات.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 4: Lifecycle Rules -->
+        <div class="section">
+            <h2>🔄 قواعد دورة الحياة (Lifecycle Rules)</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">
+                قواعد دورة الحياة تتحكم في كيفية إنشاء وحذف الموارد. تُضاف داخل الـ <code>resource</code> block باستخدام الـ <code>lifecycle</code> block.
+            </p>
+
+            <div class="lifecycle-grid">
+                <div class="lifecycle-card cbd">
+                    <h4>create_before_destroy</h4>
+                    <p>يُنشئ المورد الجديد <strong>قبل</strong> حذف القديم. مفيد للـ Zero Downtime.</p>
+                    <code>create_before_destroy = true</code>
+                </div>
+                <div class="lifecycle-card pd">
+                    <h4>prevent_destroy</h4>
+                    <p>يمنع حذف المورد نهائياً، حتى لو تغيرت الإعدادات. مفيد لقواعد البيانات.</p>
+                    <code>prevent_destroy = true</code>
+                </div>
+                <div class="lifecycle-card ic">
+                    <h4>ignore_changes</h4>
+                    <p>يتجاهل تغييرات معينة في السمات. مفيد للتغييرات اليدوية.</p>
+                    <code>ignore_changes = [tags]</code>
+                </div>
+            </div>
+
+            <h3>1️⃣ create_before_destroy</h3>
+            <div class="code-block">
+                <pre><span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"webserver"</span> {
+  <span class="argument">ami</span>           = <span class="string">"ami-0edab43b6fa892279"</span>
+  <span class="argument">instance_type</span> = <span class="string">"t2.micro"</span>
+
+  <span class="keyword">lifecycle</span> {
+    <span class="argument">create_before_destroy</span> = <span class="bool">true</span>  <span class="comment"># ← إنشاء الجديد قبل حذف القديم</span>
+  }
+}</pre>
+            </div>
+
+            <div class="flow-diagram">
+                <div class="flow-box">
+                    <h5>السلوك الافتراضي</h5>
+                    <p>حذف القديم ← إنشاء الجديد</p>
+                </div>
+                <div class="flow-arrow">VS</div>
+                <div class="flow-box" style="border-color: #22c55e; background: linear-gradient(135deg, #f0fdf4, #dcfce7);">
+                    <h5 style="color: #16a34a;">مع create_before_destroy</h5>
+                    <p>إنشاء الجديد ← حذف القديم</p>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>⚠️ تنبيه مهم</h4>
+                <p>
+                    في بعض الحالات، قد لا يعمل هذا كما تتوقع. مثال: ملف محلي (<code>local_file</code>) لا يمكن أن يكون له نفس الاسم مرتين في نفس الوقت.
+                    في هذه الحالة، سيتم حذف الملف الجديد والقديم معاً!
+                </p>
+            </div>
+
+            <h3>2️⃣ prevent_destroy</h3>
+            <div class="code-block">
+                <pre><span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"database"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="string">"m5.large"</span>
+
+  <span class="keyword">lifecycle</span> {
+    <span class="argument">prevent_destroy</span> = <span class="bool">true</span>  <span class="comment"># ← منع الحذف نهائياً</span>
+  }
+}</pre>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 متى تستخدم <code>prevent_destroy</code>؟</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li>قواعد البيانات (Databases)</li>
+                    <li>الأنظمة الحرجة (Critical Systems)</li>
+                    <li>الموارد التي لا يمكن إعادة إنشائها بسهولة</li>
+                </ul>
+                <p style="margin-top: 10px;">
+                    <strong>ملاحظة:</strong> لا يمنع <code>tofu destroy</code> من الحذف! يمنع فقط الحذف الناتج عن تغييرات في الإعدادات.
+                </p>
+            </div>
+
+            <h3>3️⃣ ignore_changes</h3>
+            <div class="code-block">
+                <pre><span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"webserver"</span> {
+  <span class="argument">ami</span>           = <span class="string">"ami-0edab43b6fa892279"</span>
+  <span class="argument">instance_type</span> = <span class="string">"t2.micro"</span>
+  <span class="argument">tags</span> = {
+    <span class="argument">Name</span> = <span class="string">"webserver"</span>
+  }
+
+  <span class="keyword">lifecycle</span> {
+    <span class="argument">ignore_changes</span> = [ <span class="attr">tags</span> ]  <span class="comment"># ← تجاهل تغييرات الـ tags</span>
+  }
+}</pre>
+            </div>
+
+            <div class="code-block">
+                <pre><span class="comment"># تجاهل جميع التغييرات</span>
+<span class="keyword">lifecycle</span> {
+  <span class="argument">ignore_changes</span> = [ <span class="keyword">all</span> ]  <span class="comment"># ← تجاهل كل شيء</span>
+}</pre>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 متى تستخدم <code>ignore_changes</code>؟</h4>
+                <p>
+                    عندما يتم تعديل المورد يدوياً أو بأدوات أخرى، ولا تريد من OpenTofu إعادة التغييرات إلى ما كانت عليه.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 5: State Commands -->
+        <div class="section">
+            <h2>🛠️ أوامر الحالة (State Commands)</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                هذه الأوامر تستخدم لإدارة الحالة <strong>دون تحرير الملف يدوياً</strong>. استخدمها دائماً بدلاً من التحرير اليدوي.
+            </p>
+
+            <table class="command-table">
+                <thead>
+                    <tr>
+                        <th>الأمر</th>
+                        <th>الوظيفة</th>
+                        <th>مثال</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>tofu state list</code></td>
+                        <td>عرض جميع الموارد في الحالة</td>
+                        <td><code>tofu state list</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu state show</code></td>
+                        <td>عرض سمات مورد محدد</td>
+                        <td><code>tofu state show local_file.pet</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu state mv</code></td>
+                        <td>إعادة تسمية أو نقل مورد</td>
+                        <td><code>tofu state mv random_pet.old random_pet.new</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu state rm</code></td>
+                        <td>إزالة مورد من الحالة (لا يحذفه فعلياً)</td>
+                        <td><code>tofu state rm local_file.pet</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu state pull</code></td>
+                        <td>تنزيل الحالة البعيدة</td>
+                        <td><code>tofu state pull > backup.json</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu state push</code></td>
+                        <td>رفع الحالة المحلية إلى البعيدة</td>
+                        <td><code>tofu state push backup.json</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>🔍 عرض الموارد في الحالة</h3>
+            <div class="code-block">
+                <pre><span class="comment"># عرض جميع الموارد</span>
+<span class="keyword">tofu state list</span>
+<span class="comment"># النتيجة:</span>
+<span class="comment"># local_file.pet</span>
+<span class="comment"># aws_instance.webserver</span>
+
+<span class="comment"># عرض مورد محدد</span>
+<span class="keyword">tofu state show</span> <span class="resource">local_file.pet</span>
+
+<span class="comment"># تصفية حسب نوع المورد</span>
+<span class="keyword">tofu state list</span> <span class="resource">aws_s3_bucket.cerberus-finance</span></pre>
+            </div>
+
+            <h3>✏️ إعادة تسمية مورد</h3>
+            <div class="code-block">
+                <pre><span class="comment"># إعادة تسمية مورد في الحالة</span>
+<span class="keyword">tofu state mv</span> <span class="resource">random_pet.super_pet_1</span> <span class="resource">random_pet.ultra_pet</span>
+
+<span class="comment"># ملاحظة: يجب أيضاً إعادة تسمية المورد في ملف الإعداد</span></pre>
+            </div>
+
+            <div class="warning-box">
+                <h4>⚠️ تنبيه مهم</h4>
+                <p>
+                    عند استخدام <code>tofu state mv</code>، يجب أيضاً تحديث اسم المورد في ملف الإعداد (<code>.tf</code>).
+                    وإلا سيقوم <code>tofu apply</code> بحذف المورد وإعادة إنشائه!
+                </p>
+            </div>
+
+            <h3>🗑️ إزالة مورد من الحالة</h3>
+            <div class="code-block">
+                <pre><span class="comment"># إزالة مورد من إدارة OpenTofu (لا يحذفه فعلياً)</span>
+<span class="keyword">tofu state rm</span> <span class="resource">local_file.hall_of_fame</span></pre>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 متى تستخدم <code>tofu state rm</code>؟</h4>
+                <p>
+                    عندما تريد التوقف عن إدارة مورد معين عبر OpenTofu، لكنك تريد الاحتفاظ به فعلياً.
+                    مثال: نقل إدارة مورد إلى فريق آخر أو أداة أخرى.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 6: Other Useful Commands -->
+        <div class="section">
+            <h2>⚡ أوامر إضافية مفيدة</h2>
+
+            <table class="command-table">
+                <thead>
+                    <tr>
+                        <th>الأمر</th>
+                        <th>الوظيفة</th>
+                        <th>متى تستخدمه</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>tofu validate</code></td>
+                        <td>التحقق من صحة الـ syntax</td>
+                        <td>قبل أي أمر آخر</td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu fmt</code></td>
+                        <td>تنسيق الكود بشكل قياسي</td>
+                        <td>قبل رفع الكود إلى GitHub</td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu show</code></td>
+                        <td>عرض الحالة الحالية</td>
+                        <td>بعد apply لفحص النتائج</td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu show -json</code></td>
+                        <td>عرض الحالة بصيغة JSON</td>
+                        <td>للمعالجة البرمجية</td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu providers</code></td>
+                        <td>عرض الـ Providers المستخدمة</td>
+                        <td>لفحص الإعدادات</td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu graph</code></td>
+                        <td>رسم بياني للاعتماديات</td>
+                        <td>لفهم العلاقات بين الموارد</td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu console</code></td>
+                        <td>وحدة تحكم تفاعلية</td>
+                        <td>لاختبار الدوال والتعابير</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="tip-box">
+                <h4>💡 نصيحة للمقابلات</h4>
+                <p>
+                    <strong>ما الفرق بين <code>tofu validate</code> و <code>tofu plan</code>؟</strong><br>
+                    • <code>validate</code>: يتحقق من صحة الـ syntax فقط (لا يتصل بالـ Provider)<br>
+                    • <code>plan</code>: يتحقق من القيم ويولد خطة تنفيذ (يتصل بالـ Provider)
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 7: Remote State -->
+        <div class="section">
+            <h2>☁️ الحالة البعيدة (Remote State)</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                في بيئات العمل الحقيقية، يجب تخزين الحالة في مكان مشترك وآمن، وليس محلياً.
+            </p>
+
+            <h3>📄 إعداد S3 كـ Backend</h3>
+            <div class="code-block">
+                <pre><span class="keyword">terraform</span> {
+  <span class="keyword">backend</span> <span class="string">"s3"</span> {
+    <span class="argument">bucket</span>         = <span class="string">"my-opentofu-state-bucket"</span>
+    <span class="argument">key</span>            = <span class="string">"project/terraform.tfstate"</span>
+    <span class="argument">region</span>         = <span class="string">"us-west-1"</span>
+    <span class="argument">dynamodb_table</span> = <span class="string">"state-locking"</span>  <span class="comment"># ← قفل الحالة</span>
+  }
+}</pre>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ مميزات الـ Remote State</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li><strong>التعاون:</strong> فريق كامل يمكنه العمل على نفس البنية التحتية</li>
+                    <li><strong>الأمان:</strong> تشفير أثناء التخزين والنقل</li>
+                    <li><strong>قفل الحالة:</strong> منع التعديلات المتزامنة</li>
+                    <li><strong>النسخ الاحتياطي:</strong> حماية من الفقدان</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <h4>⚠️ خطوات الانتقال إلى Remote State</h4>
+                <ol style="margin-right: 20px; margin-top: 10px;">
+                    <li>أضف الـ <code>backend</code> block في <code>terraform.tf</code></li>
+                    <li>شغل <code>tofu init</code> (سيطلب نسخ الحالة الحالية)</li>
+                    <li>وافق على النسخ بكتابة <code>yes</code></li>
+                    <li>احذف ملف الحالة المحلي (أصبح غير ضروري)</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Section 8: Common Mistakes -->
+        <div class="section">
+            <h2>⚠️ أخطاء شائعة يجب تجنبها</h2>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 1: تحرير ملف الحالة يدوياً</h4>
+                <p>
+                    لا تحرر <code>terraform.tfstate</code> يدوياً أبداً! استخدم الأوامر المخصصة:
+                    <code>tofu state mv</code>, <code>tofu state rm</code>, إلخ.
+                </p>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 2: وضع ملف الحالة في Git</h4>
+                <p>
+                    ملف الحالة يحتوي معلومات حساسة. أضفه إلى <code>.gitignore</code> واستخدم Remote Backend.
+                </p>
+                <div class="code-block">
+                    <pre><span class="comment"># .gitignore</span>
+*.tfstate
+*.tfstate.*
+.terraform/</pre>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 3: نسيان تحديث ملف الإعداد بعد <code>state mv</code></h4>
+                <p>
+                    عند إعادة تسمية مورد في الحالة، يجب أيضاً تحديث الاسم في ملف <code>.tf</code>.
+                    وإلا سيقوم OpenTofu بحذف المورد وإعادة إنشائه!
+                </p>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 4: استخدام <code>tofu state push</code> بدون حذر</h4>
+                <p>
+                    هذا الأمر يمكن أن يدمر الحالة البعيدة. استخدمه فقط في حالات الطوارئ،
+                    ويفضل مع <code>--force</code> فقط إذا كنت متأكداً تماماً.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 9: Interview Questions -->
+        <div class="section">
+            <h2>🎤 أسئلة مقابلات مهمة</h2>
+
+            <div class="interview-box">
+                <h4>سؤال 1: ما هو ملف الحالة ولماذا هو مهم؟</h4>
+                <p>
+                    ملف الحالة (<code>terraform.tfstate</code>) هو مصدر الحقيقة لـ OpenTofu.
+                    يحتوي على جميع تفاصيل البنية التحتية المُنشأة، ويستخدم لمقارنة الحالة الحالية
+                    مع الإعدادات المطلوبة لتحديد ما يجب إنشاؤه أو تحديثه أو حذفه.
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 2: ما الفرق بين <code>create_before_destroy</code> والسلوك الافتراضي؟</h4>
+                <p>
+                    <strong>السلوك الافتراضي:</strong> يحذف المورد القديم أولاً، ثم ينشئ الجديد.<br>
+                    <strong>create_before_destroy:</strong> ينشئ الجديد أولاً، ثم يحذف القديم.<br>
+                    مفيد للـ Zero Downtime في بيئات الإنتاج.
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 3: هل يمكن تعطيل الحالة؟</h4>
+                <p>
+                    <strong>لا!</strong> الحالة إلزامية ولا يمكن تعطيلها.
+                    يمكن فقط تعطيل <strong>تحديث</strong> الحالة عبر <code>-refresh=false</code>،
+                    لكن هذا غير مستحسن لأنه قد يؤدي إلى عدم اتساق.
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 4: ما الفرق بين <code>tofu state rm</code> و <code>tofu destroy</code>؟</h4>
+                <p>
+                    <strong><code>tofu state rm</code>:</strong> يزيل المورد من إدارة OpenTofu فقط (لا يحذفه فعلياً).<br>
+                    <strong><code>tofu destroy</code>:</strong> يحذف المورد فعلياً من البنية التحتية.
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 5: لماذا يجب استخدام Remote Backend؟</h4>
+                <p>
+                    لأن الحالة تحتوي معلومات حساسة، ويجب:
+                    • تخزينها في مكان آمن ومشفر
+                    • السماح لفريق كامل بالعمل عليها
+                    • تفعيل قفل الحالة لمنع التعديلات المتزامنة
+                    • عدم وضعها في Git
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 10: Quick Reference -->
+        <div class="section">
+            <h2>⚡ مرجع سريع</h2>
+
+            <div class="code-block">
+                <pre><span class="comment"># دورة العمل مع الحالة</span>
+<span class="keyword">tofu init</span>          <span class="comment"># تهيئة (ينشئ الحالة عند أول apply)</span>
+<span class="keyword">tofu plan</span>          <span class="comment"># يعرض الخطة (يحدث الحالة)</span>
+<span class="keyword">tofu apply</span>         <span class="comment"># ينفذ ويحدث الحالة</span>
+<span class="keyword">tofu show</span>          <span class="comment"># يعرض الحالة</span>
+<span class="keyword">tofu destroy</span>       <span class="comment"># يحذف ويحدث الحالة</span>
+
+<span class="comment"># أوامر الحالة</span>
+<span class="keyword">tofu state list</span>    <span class="comment"># عرض الموارد</span>
+<span class="keyword">tofu state show</span>    <span class="comment"># عرض مورد محدد</span>
+<span class="keyword">tofu state mv</span>      <span class="comment"># إعادة تسمية/نقل</span>
+<span class="keyword">tofu state rm</span>      <span class="comment"># إزالة من الإدارة</span>
+
+<span class="comment"># قواعد دورة الحياة</span>
+<span class="keyword">lifecycle</span> {
+  <span class="argument">create_before_destroy</span> = <span class="bool">true</span>   <span class="comment"># إنشاء الجديد أولاً</span>
+  <span class="argument">prevent_destroy</span>       = <span class="bool">true</span>   <span class="comment"># منع الحذف</span>
+  <span class="argument">ignore_changes</span>        = [ <span class="attr">tags</span> ]  <span class="comment"># تجاهل تغييرات</span>
+}</pre>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-links">
+            <a href="03-resources-and-dependencies.html">→ السابق: الموارد والاعتماديات</a>
+            <a href="#">التالي: مصادر البيانات والـ count/for_each ←</a>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                📚 <strong>المصدر الرئيسي:</strong>
+                <a href="https://opentofu.org/docs/language/state/" target="_blank">OpenTofu State Documentation</a>
+            </p>
+            <p style="margin-top: 10px;">
+                🎓 <strong>الهدف:</strong> الحصول على شهادة DevOps ووظيفة في مجال الـ Cloud
+            </p>
+            <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light);">
+                تم الإنشاء بواسطة Teaching Workspace | المرجع رقم: 04
+            </p>
+        </div>
+    </div>
+</body>
+</html>

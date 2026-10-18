@@ -1,0 +1,524 @@
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenTofu - Resources & Dependencies</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .flow-box h5 {
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        .flow-box p {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+        .flow-arrow {
+            font-size: 2rem;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔗 OpenTofu - Resources & Dependencies</h1>
+            <p>مرجع شامل للموارد، الاعتماديات الضمنية والصريحة، واستهداف الموارد</p>
+        </header>
+
+        <!-- Section 1: Overview -->
+        <div class="section">
+            <h2>📋 نظرة عامة (Overview)</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">
+                عند إنشاء البنية التحتية، تحتاج الموارد غالباً إلى الاعتماد على بعضها البعض. OpenTofu يوفر طريقتين لإدارة هذه الاعتماديات: الضمنية والصريحة.
+            </p>
+
+            <div class="dep-grid">
+                <div class="dep-card implicit">
+                    <h4>Implicit Dependency</h4>
+                    <p>اعتماد ضمني عبر الـ Reference Expression</p>
+                </div>
+                <div class="dep-card explicit">
+                    <h4>Explicit Dependency</h4>
+                    <p>اعتماد صريح عبر <code>depends_on</code></p>
+                </div>
+                <div class="dep-card attr">
+                    <h4>Resource Attributes</h4>
+                    <p>السمات المصدرة من الموارد</p>
+                </div>
+                <div class="dep-card target">
+                    <h4>Resource Targeting</h4>
+                    <p>استهداف موارد محددة</p>
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 لماذا نهتم بالاعتماديات؟</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li><strong>الإنشاء:</strong> يحدد ترتيب إنشاء الموارد</li>
+                    <li><strong>الحذف:</strong> يحدد ترتيب حذف الموارد (عكس الترتيب)</li>
+                    <li><strong>الأمان:</strong> يمنع الأخطاء الناتجة عن إنشاء مورد قبل اعتماده</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 2: Resource Attributes -->
+        <div class="section">
+            <h2>🏷️ سمات الموارد (Resource Attributes)</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                عند إنشاء مورد، يقوم OpenTofu بتسجيل عدة قيم تتعلق بهذا المورد. يمكن عرض هذه السمات باستخدام <code>tofu show</code>.
+            </p>
+
+            <h3>📄 مثال: AWS Key Pair</h3>
+            <div class="code-block">
+                <pre><span class="keyword">resource</span> <span class="string">"aws_key_pair"</span> <span class="string">"alpha"</span> {
+  <span class="argument">key_name</span>   = <span class="string">"alpha"</span>
+  <span class="argument">public_key</span> = <span class="string">"ssh-rsa AAAAB3Njvlkdjskdnajdhajs;faf.....alpha@a-server"</span>
+}</pre>
+            </div>
+
+            <h3>🔍 عرض السمات المصدرة</h3>
+            <div class="code-block">
+                <pre><span class="keyword">tofu show</span></pre>
+            </div>
+
+            <h3>📋 السمات المصدرة من <code>aws_key_pair</code></h3>
+            <div class="attr-list">
+                <div class="attr-item"><span>arn</span> - ARN الخاص بالمورد</div>
+                <div class="attr-item"><span>fingerprint</span> - بصمة المفتاح</div>
+                <div class="attr-item"><span>id</span> - معرف المورد</div>
+                <div class="attr-item"><span>key_name</span> - اسم المفتاح</div>
+                <div class="attr-item"><span>public_key</span> - المفتاح العام</div>
+                <div class="attr-item"><span>tags_all</span> - جميع الوسوم</div>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ الـ Reference Expression</h4>
+                <p>
+                    يمكن استخدام السمات المصدرة كمدخلات لموارد أخرى عبر الصيغة:
+                </p>
+                <div class="code-block">
+                    <pre><span class="comment"># الصيغة العامة</span>
+<span class="resource">resourceType</span>.<span class="resource">resourceName</span>.<span class="attr">attribute</span>
+
+<span class="comment"># مثال عملي</span>
+<span class="resource">aws_key_pair</span>.<span class="resource">alpha</span>.<span class="attr">key_name</span></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Implicit Dependency -->
+        <div class="section">
+            <h2>🔵 الاعتماد الضمني (Implicit Dependency)</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                عندما يستخدم مورد سمة من مورد آخر عبر الـ Reference Expression، يفهم OpenTofu الاعتماد تلقائياً.
+            </p>
+
+            <h3>📄 مثال: EC2 Instance يعتمد على Key Pair</h3>
+            <div class="code-block">
+                <pre><span class="comment"># المورد الأول: إنشاء المفتاح</span>
+<span class="keyword">resource</span> <span class="string">"aws_key_pair"</span> <span class="string">"alpha"</span> {
+  <span class="argument">key_name</span>   = <span class="string">"alpha"</span>
+  <span class="argument">public_key</span> = <span class="string">"ssh-rsa AAAAB3Njvlkdjskdnajdhajs;faf.....alpha@a-server"</span>
+}
+
+<span class="comment"># المورد الثاني: إنشاء الماكينة (تعتمد على المفتاح)</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"cerberus"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.instance_type</span>
+  <span class="argument">key_name</span>      = <span class="resource">aws_key_pair.alpha.key_name</span>  <span class="comment"># ← Implicit Dependency</span>
+}</pre>
+            </div>
+
+            <h3>🔄 ترتيب الإنشاء والحذف</h3>
+            <div class="flow-diagram">
+                <div class="flow-box">
+                    <h5>1️⃣ aws_key_pair.alpha</h5>
+                    <p>يُنشأ أولاً</p>
+                </div>
+                <div class="flow-arrow">←</div>
+                <div class="flow-box">
+                    <h5>2️⃣ aws_instance.cerberus</h5>
+                    <p>يُنشأ ثانياً</p>
+                </div>
+            </div>
+
+            <div class="flow-diagram">
+                <div class="flow-box">
+                    <h5>1️⃣ aws_instance.cerberus</h5>
+                    <p>يُحذف أولاً</p>
+                </div>
+                <div class="flow-arrow">←</div>
+                <div class="flow-box">
+                    <h5>2️⃣ aws_key_pair.alpha</h5>
+                    <p>يُحذف ثانياً</p>
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 متى يحدث الاعتماد الضمني؟</h4>
+                <p>
+                    عندما تستخدم <code>resourceType.resourceName.attribute</code> داخل مورد آخر.
+                    هذا يخبر OpenTofu تلقائياً أن المورد الثاني يعتمد على الأول.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 4: Explicit Dependency -->
+        <div class="section">
+            <h2>🔴 الاعتماد الصريح (Explicit Dependency)</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                عندما لا يوجد اعتماد ضمني بين الموارد، ولكنك تريد تحديد ترتيب الإنشاء، استخدم <code>depends_on</code>.
+            </p>
+
+            <h3>📄 مثال: إنشاء DB قبل Web</h3>
+            <div class="code-block">
+                <pre><span class="comment"># المورد الأول: قاعدة البيانات</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"db"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.db_ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.web_instance_type</span>
+}
+
+<span class="comment"># المورد الثاني: خادم الويب (يعتمد على DB)</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"web"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.web_ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.db_instance_type</span>
+  <span class="argument">depends_on</span> = [
+    <span class="resource">aws_instance.db</span>  <span class="comment"># ← Explicit Dependency</span>
+  ]
+}</pre>
+            </div>
+
+            <h3>📄 مثال آخر: ملف يعتمد على ملف آخر</h3>
+            <div class="code-block">
+                <pre><span class="comment"># المورد الأول: ملف krill</span>
+<span class="keyword">resource</span> <span class="string">"local_file"</span> <span class="string">"krill"</span> {
+  <span class="argument">filename</span> = <span class="string">"/root/krill"</span>
+  <span class="argument">content</span>  = <span class="string">"krill"</span>
+}
+
+<span class="comment"># المورد الثاني: ملف whale (يعتمد على krill)</span>
+<span class="keyword">resource</span> <span class="string">"local_file"</span> <span class="string">"whale"</span> {
+  <span class="argument">filename</span> = <span class="string">"/root/whale"</span>
+  <span class="argument">content</span>  = <span class="string">"whale"</span>
+  <span class="argument">depends_on</span> = [ <span class="resource">local_file.krill</span> ]  <span class="comment"># ← Explicit Dependency</span>
+}</pre>
+            </div>
+
+            <div class="warning-box">
+                <h4>⚠️ متى تستخدم <code>depends_on</code>؟</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li>عندما لا يوجد اعتماد ضمني بين الموارد</li>
+                    <li>عندما تريد إنشاء مورد قبل آخر لأسباب منطقية</li>
+                    <li>مثال: إنشاء قاعدة البيانات قبل خادم التطبيق</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 5: Comparison -->
+        <div class="section">
+            <h2>⚖️ مقارنة: ضمني مقابل صريح</h2>
+
+            <table class="command-table">
+                <thead>
+                    <tr>
+                        <th>المعيار</th>
+                        <th>الاعتماد الضمني</th>
+                        <th>الاعتماد الصريح</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>كيف يحدث؟</strong></td>
+                        <td>تلقائياً عبر الـ Reference Expression</td>
+                        <td>يدوياً عبر <code>depends_on</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>مثال</strong></td>
+                        <td><code>key_name = aws_key_pair.alpha.key_name</code></td>
+                        <td><code>depends_on = [aws_instance.db]</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>متى تستخدمه؟</strong></td>
+                        <td>عندما يحتاج مورد لسمة من مورد آخر</td>
+                        <td>عندما تريد ترتيباً معيناً دون استخدام سمات</td>
+                    </tr>
+                    <tr>
+                        <td><strong>الأفضلية</strong></td>
+                        <td>✅ مفضل دائماً</td>
+                        <td>⚠️ استخدمه فقط عند الضرورة</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="interview-box">
+                <h4>🎤 سؤال مقابلة شائع</h4>
+                <p>
+                    <strong>Resource A يعتمد على Resource B لكنه لا يستخدم أي من سماته. ما نوع هذا الاعتماد؟</strong><br>
+                    الإجابة: <strong>Explicit Dependency</strong> - لأنه لا يوجد استخدام للسمات، يجب استخدام <code>depends_on</code>.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 6: Resource Targeting -->
+        <div class="section">
+            <h2>🎯 استهداف الموارد (Resource Targeting)</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                يمكنك استهداف مورد محدد فقط لتطبيق التغييرات عليه دون باقي الموارد.
+            </p>
+
+            <h3>📄 مثال عملي</h3>
+            <div class="code-block">
+                <pre><span class="comment"># المورد الأول: نص عشوائي</span>
+<span class="keyword">resource</span> <span class="string">"random_string"</span> <span class="string">"server-suffix"</span> {
+  <span class="argument">length</span>  = <span class="number">6</span>
+  <span class="argument">upper</span>   = <span class="bool">false</span>
+  <span class="argument">special</span> = <span class="bool">false</span>
+}
+
+<span class="comment"># المورد الثاني: ماكينة تعتمد على النص العشوائي</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"web"</span> {
+  <span class="argument">ami</span>           = <span class="string">"ami-013356knkd354"</span>
+  <span class="argument">instance_type</span> = <span class="string">"web ${random_string.server-suffix.id}"</span>
+}</pre>
+            </div>
+
+            <h3>🔧 استخدام <code>--target</code></h3>
+            <div class="code-block">
+                <pre><span class="comment"># استهداف مورد واحد فقط</span>
+<span class="keyword">tofu apply</span> --target <span class="resource">random_string.server-suffix</span>
+
+<span class="comment"># الصيغة العامة</span>
+<span class="keyword">tofu apply</span> --target <span class="resource">resourceType.resourceName</span></pre>
+            </div>
+
+            <div class="warning-box">
+                <h4>⚠️ تنبيه مهم</h4>
+                <p>
+                    استهداف الموارد يجب أن يُستخدم فقط في الحالات النادرة مثل:
+                </p>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li>تصحيح خطأ سريع</li>
+                    <li>معالجة تغيير عاجل دون تنفيذ الخطة الكاملة</li>
+                </ul>
+                <p style="margin-top: 10px;">
+                    <strong>لا تستخدمه بشكل روتيني!</strong> OpenTofu سيحذرك أن التغييرات المطبقة قد تكون غير كاملة.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 7: Practical Examples -->
+        <div class="section">
+            <h2>🎯 أمثلة عملية كاملة من الملف</h2>
+
+            <h3>📄 مثال 1: TLS Private Key → Local File</h3>
+            <div class="code-block">
+                <pre><span class="comment"># key.tf</span>
+
+<span class="comment"># المورد الأول: إنشاء مفتاح خاص</span>
+<span class="keyword">resource</span> <span class="string">"tls_private_key"</span> <span class="string">"pvtkey"</span> {
+  <span class="argument">algorithm</span> = <span class="string">"RSA"</span>
+  <span class="argument">rsa_bits</span>  = <span class="number">4096</span>
+}
+
+<span class="comment"># المورد الثاني: حفظ المفتاح في ملف</span>
+<span class="keyword">resource</span> <span class="string">"local_file"</span> <span class="string">"key_details"</span> {
+  <span class="argument">filename</span> = <span class="string">"/root/key.txt"</span>
+  <span class="argument">content</span>  = <span class="resource">tls_private_key.pvtkey.private_key_pem</span>  <span class="comment"># ← Implicit Dependency</span>
+}</pre>
+            </div>
+
+            <h3>📄 مثال 2: Time Static → Local File</h3>
+            <div class="code-block">
+                <pre><span class="comment"># main.tf</span>
+
+<span class="comment"># المورد الأول: طابع زمني</span>
+<span class="keyword">resource</span> <span class="string">"time_static"</span> <span class="string">"time_update"</span> {
+}
+
+<span class="comment"># المورد الثاني: ملف يحتوي على الطابع الزمني</span>
+<span class="keyword">resource</span> <span class="string">"local_file"</span> <span class="string">"time"</span> {
+  <span class="argument">filename</span> = <span class="string">"/root/time.txt"</span>
+  <span class="argument">content</span>  = <span class="string">"Time stamp of this file is ${time_static.time_update.id}"</span>
+}</pre>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ السمات المصدرة من <code>time_static</code></h4>
+                <div class="attr-list">
+                    <div class="attr-item"><span>id</span> - المعرف (طابع زمني)</div>
+                    <div class="attr-item"><span>day</span> - اليوم</div>
+                    <div class="attr-item"><span>hour</span> - الساعة</div>
+                    <div class="attr-item"><span>minute</span> - الدقيقة</div>
+                    <div class="attr-item"><span>month</span> - الشهر</div>
+                    <div class="attr-item"><span>second</span> - الثانية</div>
+                    <div class="attr-item"><span>unix</span> - طابع يونكس</div>
+                    <div class="attr-item"><span>year</span> - السنة</div>
+                    <div class="attr-item"><span>rfc3339</span> - صيغة RFC3339</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 8: Output Variables with Dependencies -->
+        <div class="section">
+            <h2>📤 متغيرات الإخراج مع الاعتماديات</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                يمكن استخدام متغيرات الإخراج لعرض سمات الموارد بعد إنشائها.
+            </p>
+
+            <div class="code-block">
+                <pre><span class="comment"># المورد</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"cerberus"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.instance_type</span>
+}
+
+<span class="comment"># متغير الإخراج</span>
+<span class="keyword">output</span> <span class="string">"pub_ip"</span> {
+  <span class="argument">value</span>       = <span class="resource">aws_instance.cerberus.public_ip</span>
+  <span class="argument">description</span> = <span class="string">"print the public IPv4 address"</span>
+}</pre>
+            </div>
+
+            <h3>🔧 الأوامر المفيدة</h3>
+            <div class="code-block">
+                <pre><span class="comment"># عرض جميع متغيرات الإخراج</span>
+<span class="keyword">tofu output</span>
+
+<span class="comment"># عرض متغير إخراج محدد</span>
+<span class="keyword">tofu output</span> pub_ip</pre>
+            </div>
+        </div>
+
+        <!-- Section 9: Common Mistakes -->
+        <div class="section">
+            <h2>⚠️ أخطاء شائعة يجب تجنبها</h2>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 1: نسيان القوس المربع في <code>depends_on</code></h4>
+                <div class="code-block">
+                    <pre><span class="comment"># ❌ خطأ</span>
+<span class="argument">depends_on</span> = <span class="resource">aws_instance.db</span>
+
+<span class="comment"># ✅ صحيح</span>
+<span class="argument">depends_on</span> = [ <span class="resource">aws_instance.db</span> ]</pre>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 2: استخدام <code>depends_on</code> عندما يوجد اعتماد ضمني</h4>
+                <p>
+                    إذا كنت تستخدم سمة من مورد آخر، فلا تحتاج إلى <code>depends_on</code>.
+                    الـ Reference Expression يكفي لإنشاء الاعتماد الضمني.
+                </p>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 3: الإفراط في استخدام <code>--target</code></h4>
+                <p>
+                    استهداف الموارد يجب أن يكون نادراً. الاستخدام المفرط يمكن أن يؤدي إلى حالة غير متسقة.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 10: Interview Questions -->
+        <div class="section">
+            <h2>🎤 أسئلة مقابلات مهمة</h2>
+
+            <div class="interview-box">
+                <h4>سؤال 1: ما الفرق بين الاعتماد الضمني والصريح؟</h4>
+                <p>
+                    <strong>الاعتماد الضمني:</strong> يحدث تلقائياً عندما يستخدم مورد سمة من مورد آخر عبر الـ Reference Expression.<br>
+                    <strong>الاعتماد الصريح:</strong> يُحدد يدوياً باستخدام <code>depends_on</code> عندما لا يوجد استخدام للسمات.
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 2: ما هي صيغة الـ Reference Expression؟</h4>
+                <p>
+                    <code>resourceType.resourceName.attribute</code><br>
+                    مثال: <code>aws_key_pair.alpha.key_name</code>
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 3: ما هو ترتيب الإنشاء والحذف عند وجود اعتماد؟</h4>
+                <p>
+                    <strong>الإنشاء:</strong> المورد المعتمد عليه أولاً، ثم المورد المعتمد.<br>
+                    <strong>الحذف:</strong> المورد المعتمد أولاً، ثم المورد المعتمد عليه (عكس الترتيب).
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 4: متى تستخدم <code>--target</code>؟</h4>
+                <p>
+                    فقط في الحالات النادرة مثل تصحيح خطأ سريع أو معالجة تغيير عاجل.
+                    لا يُنصح باستخدامه بشكل روتيني لأنه قد يؤدي إلى حالة غير متسقة.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 11: Quick Reference -->
+        <div class="section">
+            <h2>⚡ مرجع سريع</h2>
+
+            <table class="command-table">
+                <thead>
+                    <tr>
+                        <th>المفهوم</th>
+                        <th>الصيغة</th>
+                        <th>متى تستخدمه</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge badge-attr">Reference Expression</span></td>
+                        <td><code>resourceType.resourceName.attribute</code></td>
+                        <td>عندما يحتاج مورد لسمة من مورد آخر</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-implicit">Implicit Dependency</span></td>
+                        <td><code>key_name = aws_key_pair.alpha.key_name</code></td>
+                        <td>تلقائياً عبر الـ Reference Expression</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-explicit">Explicit Dependency</span></td>
+                        <td><code>depends_on = [aws_instance.db]</code></td>
+                        <td>عندما لا يوجد استخدام للسمات</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-target">Resource Targeting</span></td>
+                        <td><code>tofu apply --target resourceType.resourceName</code></td>
+                        <td>في الحالات النادرة فقط</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-attr">Output Variable</span></td>
+                        <td><code>output "name" { value = ... }</code></td>
+                        <td>لعرض سمات الموارد بعد الإنشاء</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-links">
+            <a href="02-variables-and-types.html">→ السابق: المتغيرات وأنواعها</a>
+            <a href="#">التالي: دورة الحياة والحالة ←</a>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                📚 <strong>المصدر الرئيسي:</strong>
+                <a href="https://opentofu.org/docs/language/resources/" target="_blank">OpenTofu Resources Documentation</a>
+            </p>
+            <p style="margin-top: 10px;">
+                🎓 <strong>الهدف:</strong> الحصول على شهادة DevOps ووظيفة في مجال الـ Cloud
+            </p>
+            <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light);">
+                تم الإنشاء بواسطة Teaching Workspace | المرجع رقم: 03
+            </p>
+        </div>
+    </div>
+</body>
+</html>

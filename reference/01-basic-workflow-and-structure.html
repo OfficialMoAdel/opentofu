@@ -1,0 +1,303 @@
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenTofu - Basic Workflow & File Structure</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .code-block .argument {
+            color: #f9e2af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 OpenTofu - Basic Workflow & File Structure</h1>
+            <p>مرجع سريع للمبتدئين - دورة العمل الأساسية وهيكلة الملفات</p>
+        </header>
+
+        <!-- Section 1: Basic Workflow -->
+        <div class="section">
+            <h2>📋 دورة العمل الأساسية (Basic Workflow)</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">
+                هذه هي الخطوات الأساسية التي ستستخدمها في كل مرة تعمل فيها مع OpenTofu. احفظها جيداً!
+            </p>
+
+            <div class="workflow-grid">
+                <div class="workflow-card">
+                    <div class="step-number">1</div>
+                    <h4>Initialize</h4>
+                    <code>tofu init</code>
+                    <p>يقوم بتنزيل الـ Providers المطلوبة وتجهيز مجلد العمل</p>
+                </div>
+                <div class="workflow-card">
+                    <div class="step-number">2</div>
+                    <h4>Plan</h4>
+                    <code>tofu plan</code>
+                    <p>يعرض ما سيفعله دون تنفيذه (مثل Dry Run)</p>
+                </div>
+                <div class="workflow-card">
+                    <div class="step-number">3</div>
+                    <h4>Apply</h4>
+                    <code>tofu apply</code>
+                    <p>ينفذ التغييرات فعلياً على البنية التحتية</p>
+                </div>
+                <div class="workflow-card">
+                    <div class="step-number">4</div>
+                    <h4>Show</h4>
+                    <code>tofu show</code>
+                    <p>يعرض حالة البنية التحتية الحالية</p>
+                </div>
+                <div class="workflow-card">
+                    <div class="step-number">5</div>
+                    <h4>Destroy</h4>
+                    <code>tofu destroy</code>
+                    <p>يحذف جميع الموارد التي تم إنشاؤها</p>
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 نصيحة للمقابلات</h4>
+                <p>
+                    <strong>لماذا نستخدم <code>tofu plan</code> قبل <code>tofu apply</code>؟</strong><br>
+                    لأنه يعرض لك ما سيحدث دون تنفيذه، مما يسمح لك بمراجعة التغييرات وتجنب الأخطاء.
+                    هذا مهم جداً في بيئات الإنتاج (Production).
+                </p>
+            </div>
+
+            <h3>📝 أوامر إضافية مفيدة</h3>
+            <table class="command-table">
+                <thead>
+                    <tr>
+                        <th>الأمر</th>
+                        <th>الوظيفة</th>
+                        <th>متى تستخدمه</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>tofu apply -auto-approve</code></td>
+                        <td>تنفيذ بدون طلب تأكيد</td>
+                        <td>في الاختبارات فقط، ليس في الإنتاج</td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu destroy -auto-approve</code></td>
+                        <td>حذف بدون طلب تأكيد</td>
+                        <td>عند التنظيف السريع</td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu validate</code></td>
+                        <td>التحقق من صحة الـ syntax</td>
+                        <td>قبل أي أمر آخر</td>
+                    </tr>
+                    <tr>
+                        <td><code>tofu fmt</code></td>
+                        <td>تنسيق الكود بشكل قياسي</td>
+                        <td>قبل رفع الكود إلى GitHub</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Section 2: File Structure -->
+        <div class="section">
+            <h2>📁 هيكل الملفات المثالي (File Structure)</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">
+                تقسيم الكود إلى ملفات منفصلة يجعل المشروع أسهل في القراءة والصيانة. هذا سؤال شائع في المقابلات!
+            </p>
+
+            <div class="file-structure">
+                <div class="file-card">
+                    <h4>📄 main.tf</h4>
+                    <p>يحتوي على تعريف الـ Resources (البنية التحتية الفعلية)</p>
+                    <span class="badge badge-required">أساسي</span>
+                </div>
+                <div class="file-card">
+                    <h4>📄 variables.tf</h4>
+                    <p>يحتوي على تعريف المتغيرات (المدخلات)</p>
+                    <span class="badge badge-required">أساسي</span>
+                </div>
+                <div class="file-card">
+                    <h4>📄 outputs.tf</h4>
+                    <p>يحتوي على المخرجات التي تريد عرضها</p>
+                    <span class="badge badge-optional">اختياري</span>
+                </div>
+                <div class="file-card">
+                    <h4>📄 provider.tf</h4>
+                    <p>يحتوي على إعدادات الـ Provider (مثل AWS أو Azure)</p>
+                    <span class="badge badge-required">أساسي</span>
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 لماذا نقسم الكود إلى ملفات منفصلة؟</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li><strong>القراءة:</strong> يسهل على أي شخص فهم المشروع</li>
+                    <li><strong>الصيانة:</strong> التعديل على جزء واحد دون التأثير على الباقي</li>
+                    <li><strong>إعادة الاستخدام:</strong> يمكن استخدام نفس الـ variables في مشاريع أخرى</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 3: First Example -->
+        <div class="section">
+            <h2>🎯 أول مثال عملي: إنشاء ملف محلي</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">
+                هذا هو أبسط مثال لتفهم كيف يعمل OpenTofu. سننشئ ملف نصي محلي باستخدام الـ <code>local</code> provider.
+            </p>
+
+            <h3>📄 main.tf</h3>
+            <div class="code-block">
+                <pre><span class="comment"># إنشاء ملف نصي محلي</span>
+<span class="keyword">resource</span> <span class="string">"local_file"</span> <span class="string">"pet"</span> {
+  <span class="argument">filename</span> = <span class="string">"/root/pets.txt"</span>
+  <span class="argument">content</span>  = <span class="string">"we love pets"</span>
+  <span class="argument">file_permation</span> = <span class="string">"0700"</span>
+}</pre>
+            </div>
+
+            <h3>🔧 خطوات التنفيذ</h3>
+            <div class="code-block">
+                <pre><span class="comment"># 1. تهيئة المشروع (تنزيل الـ local provider)</span>
+<span class="keyword">tofu init</span>
+
+<span class="comment"># 2. عرض ما سيحدث (اختياري لكن مستحسن)</span>
+<span class="keyword">tofu plan</span>
+
+<span class="comment"># 3. تنفيذ التغييرات</span>
+<span class="keyword">tofu apply</span>
+
+<span class="comment"># 4. عرض النتيجة</span>
+<span class="keyword">tofu show</span>
+
+<span class="comment"># 5. حذف كل شيء (عند الانتهاء)</span>
+<span class="keyword">tofu destroy</span></pre>
+            </div>
+
+            <div class="warning-box">
+                <h4>⚠️ تنبيه مهم</h4>
+                <p>
+                    في الملف الأصلي كان هناك خطأ إملائي: <code>file_permation</code><br>
+                    الصحيح هو: <code>file_permission</code><br>
+                    استخدم <code>tofu validate</code> دائماً لاكتشاف مثل هذه الأخطاء!
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 4: Key Concepts -->
+        <div class="section">
+            <h2>🧠 مفاهيم أساسية يجب حفظها</h2>
+
+            <h3>📌 Resource Block Syntax</h3>
+            <div class="code-block">
+                <pre><span class="keyword">resource</span> <span class="string">"&lt;resource_type&gt;"</span> <span class="string">"&lt;resource_name&gt;"</span> {
+  <span class="argument">argument1</span> = <span class="string">"value1"</span>
+  <span class="argument">argument2</span> = <span class="string">"value2"</span>
+}</pre>
+            </div>
+
+            <table class="command-table">
+                <thead>
+                    <tr>
+                        <th>المصطلح</th>
+                        <th>الشرح</th>
+                        <th>مثال</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>resource</code></td>
+                        <td>الكلمة المفتاحية لتعريف مورد جديد</td>
+                        <td><code>resource</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>resource_type</code></td>
+                        <td>نوع المورد (يتبع للـ Provider)</td>
+                        <td><code>local_file</code>, <code>aws_instance</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>resource_name</code></td>
+                        <td>اسم منطقي تختاره أنت للمورد</td>
+                        <td><code>"pet"</code>, <code>"webserver"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>arguments</code></td>
+                        <td>خصائص وإعدادات المورد</td>
+                        <td><code>filename</code>, <code>content</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="tip-box">
+                <h4>💡 سؤال مقابلة شائع</h4>
+                <p>
+                    <strong>ما الفرق بين <code>resource</code> و <code>data source</code>؟</strong><br>
+                    • <code>resource</code>: يستخدم لإنشاء وإدارة البنية التحتية (يكتب)<br>
+                    • <code>data source</code>: يستخدم لقراءة معلومات من بنية موجودة مسبقاً (يقرأ فقط)
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 5: State File -->
+        <div class="section">
+            <h2>💾 ملف الحالة (State File)</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                بعد أول <code>tofu apply</code>، سيتم إنشاء ملف الحالة تلقائياً.
+            </p>
+
+            <div class="code-block">
+                <pre><span class="comment"># اسم ملف الحالة الافتراضي</span>
+terraform.tfstate
+
+<span class="comment"># ملف النسخ الاحتياطي</span>
+terraform.tfstate.backup</pre>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 نقاط مهمة عن الـ State</h4>
+                <ul style="margin-right: 20px; margin-top: 10px;">
+                    <li>يحتوي على جميع معلومات البنية التحتية بصيغة JSON</li>
+                    <li>هو "مصدر الحقيقة" (Source of Truth) لـ OpenTofu</li>
+                    <li>لا تضعه أبداً في Git (يحتوي معلومات حساسة)</li>
+                    <li>استخدم <code>tofu show</code> لعرض محتواه</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 6: Quick Reference -->
+        <div class="section">
+            <h2>⚡ مرجع سريع للأوامر</h2>
+
+            <div class="code-block">
+                <pre><span class="comment"># دورة العمل الكاملة</span>
+<span class="keyword">tofu init</span>          <span class="comment"># تهيئة</span>
+<span class="keyword">tofu validate</span>      <span class="comment"># التحقق من الصحة</span>
+<span class="keyword">tofu plan</span>          <span class="comment"># عرض الخطة</span>
+<span class="keyword">tofu apply</span>         <span class="comment"># التنفيذ</span>
+<span class="keyword">tofu show</span>          <span class="comment"># عرض الحالة</span>
+<span class="keyword">tofu destroy</span>       <span class="comment"># الحذف</span>
+
+<span class="comment"># أوامر مفيدة</span>
+<span class="keyword">tofu fmt</span>           <span class="comment"># تنسيق الكود</span>
+<span class="keyword">tofu output</span>        <span class="comment"># عرض المخرجات</span>
+<span class="keyword">tofu state list</span>    <span class="comment"># عرض الموارد في الـ state</span></pre>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                📚 <strong>المصدر الرئيسي:</strong>
+                <a href="https://opentofu.org/docs/" target="_blank">OpenTofu Official Documentation</a>
+            </p>
+            <p style="margin-top: 10px;">
+                🎓 <strong>الهدف:</strong> الحصول على شهادة DevOps ووظيفة في مجال الـ Cloud
+            </p>
+            <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light);">
+                تم الإنشاء بواسطة Teaching Workspace | المرجع رقم: 01
+            </p>
+        </div>
+    </div>
+</body>
+</html>

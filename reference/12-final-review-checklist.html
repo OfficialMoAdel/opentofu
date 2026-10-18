@@ -1,0 +1,945 @@
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenTofu - Final Review Checklist</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🎓 OpenTofu - Final Review Checklist</h1>
+        <p>
+          ملخص شامل للمراجعة النهائية - قائمة تحقق، أسئلة مقابلات، وخطة دراسة
+        </p>
+      </header>
+
+      <!-- Section 1: Core Concepts Checklist -->
+      <div class="section">
+        <h2>✅ قائمة تحقق المفاهيم الأساسية</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          تأكد من أنك تفهم كل مفهوم قبل الانتقال إلى التالي. ضع علامة ✓ على كل
+          مفهوم تتقنه.
+        </p>
+
+        <h3>📋 الأساسيات</h3>
+        <div class="checklist">
+          <div class="checklist-item">
+            <input type="checkbox" id="c1" />
+            <label for="c1">
+              دورة العمل الأساسية: <code>init</code>, <code>plan</code>,
+              <code>apply</code>, <code>destroy</code>
+              <span class="ref">📄 01-basic-workflow</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="c2" />
+            <label for="c2">
+              هيكل الملفات: <code>main.tf</code>, <code>variables.tf</code>,
+              <code>outputs.tf</code>, <code>provider.tf</code>
+              <span class="ref">📄 01-basic-workflow</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="c3" />
+            <label for="c3">
+              الـ Resource Block: <code>resource "type" "name" { }</code>
+              <span class="ref">📄 01-basic-workflow</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="c4" />
+            <label for="c4">
+              ملف الحالة: <code>terraform.tfstate</code> و
+              <code>terraform.tfstate.backup</code>
+              <span class="ref">📄 04-state-lifecycle</span>
+            </label>
+          </div>
+        </div>
+
+        <h3>📦 المتغيرات وأنواع البيانات</h3>
+        <div class="checklist">
+          <div class="checklist-item">
+            <input type="checkbox" id="v1" />
+            <label for="v1">
+              الأنواع الأساسية: <code>string</code>, <code>number</code>,
+              <code>bool</code>
+              <span class="ref">📄 02-variables</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="v2" />
+            <label for="v2">
+              أنواع المجموعات: <code>list</code>, <code>map</code>,
+              <code>set</code>
+              <span class="ref">📄 02-variables</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="v3" />
+            <label for="v3">
+              الأنواع الهيكلية: <code>object</code>, <code>tuple</code>
+              <span class="ref">📄 02-variables</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="v4" />
+            <label for="v4">
+              طرق تمرير المتغيرات: <code>default</code>, <code>-var</code>,
+              <code>TF_VAR_*</code>, <code>.tfvars</code>
+              <span class="ref">📄 02-variables</span>
+            </label>
+          </div>
+        </div>
+
+        <h3>🔗 الموارد والاعتماديات</h3>
+        <div class="checklist">
+          <div class="checklist-item">
+            <input type="checkbox" id="r1" />
+            <label for="r1">
+              الـ Reference Expression: <code>type.name.attribute</code>
+              <span class="ref">📄 03-resources</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="r2" />
+            <label for="r2">
+              الاعتماد الضمني (Implicit) عبر الـ Reference Expression
+              <span class="ref">📄 03-resources</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="r3" />
+            <label for="r3">
+              الاعتماد الصريح (Explicit) عبر <code>depends_on</code>
+              <span class="ref">📄 03-resources</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="r4" />
+            <label for="r4">
+              استهداف الموارد: <code>tofu apply --target</code>
+              <span class="ref">📄 03-resources</span>
+            </label>
+          </div>
+        </div>
+
+        <h3>💾 الحالة وقواعد دورة الحياة</h3>
+        <div class="checklist">
+          <div class="checklist-item">
+            <input type="checkbox" id="s1" />
+            <label for="s1">
+              <code>create_before_destroy</code>: إنشاء الجديد قبل حذف القديم
+              <span class="ref">📄 04-state-lifecycle</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="s2" />
+            <label for="s2">
+              <code>prevent_destroy</code>: منع حذف المورد
+              <span class="ref">📄 04-state-lifecycle</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="s3" />
+            <label for="s3">
+              <code>ignore_changes</code>: تجاهل تغييرات معينة
+              <span class="ref">📄 04-state-lifecycle</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="s4" />
+            <label for="s4">
+              أوامر الحالة: <code>list</code>, <code>show</code>,
+              <code>mv</code>, <code>rm</code>, <code>pull</code>,
+              <code>push</code>
+              <span class="ref">📄 04-state-lifecycle</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="s5" />
+            <label for="s5">
+              الـ Remote State: S3, Azure Blob, GCS مع قفل الحالة
+              <span class="ref">📄 04-state-lifecycle</span>
+            </label>
+          </div>
+        </div>
+
+        <h3>📊 مصادر البيانات و count/for_each</h3>
+        <div class="checklist">
+          <div class="checklist-item">
+            <input type="checkbox" id="d1" />
+            <label for="d1">
+              الـ Data Source: <code>data "type" "name" { }</code>
+              <span class="ref">📄 05-data-sources</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="d2" />
+            <label for="d2">
+              الفرق بين Resource و Data Source
+              <span class="ref">📄 05-data-sources</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="d3" />
+            <label for="d3">
+              <code>count</code>: إنشاء موارد كقائمة، <code>count.index</code>
+              <span class="ref">📄 05-data-sources</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="d4" />
+            <label for="d4">
+              <code>for_each</code>: إنشاء موارد كخريطة، <code>each.key</code>,
+              <code>each.value</code>
+              <span class="ref">📄 05-data-sources</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="d5" />
+            <label for="d5">
+              مشكلة الإزاحة في <code>count</code> ولماذا
+              <code>for_each</code> أفضل
+              <span class="ref">📄 05-data-sources</span>
+            </label>
+          </div>
+        </div>
+
+        <h3>📦 الوحدات وقيود الإصدارات</h3>
+        <div class="checklist">
+          <div class="checklist-item">
+            <input type="checkbox" id="m1" />
+            <label for="m1">
+              قيود الإصدارات: <code>=</code>, <code>!=</code>,
+              <code>&gt;</code>, <code>&lt;</code>, <code>~&gt;</code>
+              <span class="ref">📄 06-modules</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="m2" />
+            <label for="m2">
+              الـ <code>required_providers</code> block
+              <span class="ref">📄 06-modules</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="m3" />
+            <label for="m3">
+              الوحدات المحلية: <code>source = "../modules/name"</code>
+              <span class="ref">📄 06-modules</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="m4" />
+            <label for="m4">
+              وحدات الـ Registry:
+              <code>source = "terraform-aws-modules/..."</code>
+              <span class="ref">📄 06-modules</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="m5" />
+            <label for="m5">
+              الـ Addressing:
+              <code>module.name.resource_type.resource_name</code>
+              <span class="ref">📄 06-modules</span>
+            </label>
+          </div>
+        </div>
+
+        <h3>🔧 الـ Provisioners والـ Workspaces</h3>
+        <div class="checklist">
+          <div class="checklist-item">
+            <input type="checkbox" id="p1" />
+            <label for="p1">
+              <code>remote-exec</code>: تشغيل أوامر على المورد البعيد
+              <span class="ref">📄 07-provisioners</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="p2" />
+            <label for="p2">
+              <code>local-exec</code>: تشغيل أوامر على الجهاز المحلي
+              <span class="ref">📄 07-provisioners</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="p3" />
+            <label for="p3">
+              الـ <code>connection</code> block و <code>self.public_ip</code>
+              <span class="ref">📄 07-provisioners</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="p4" />
+            <label for="p4">
+              الـ Workspaces: <code>new</code>, <code>select</code>,
+              <code>list</code>
+              <span class="ref">📄 07-provisioners</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="p5" />
+            <label for="p5">
+              <code>terraform.workspace</code> و <code>lookup()</code>
+              <span class="ref">📄 07-provisioners</span>
+            </label>
+          </div>
+        </div>
+
+        <h3>⚡ الدوال والتعابير الشرطية</h3>
+        <div class="checklist">
+          <div class="checklist-item">
+            <input type="checkbox" id="f1" />
+            <label for="f1">
+              الدوال العددية: <code>max</code>, <code>min</code>,
+              <code>ceil</code>, <code>floor</code>
+              <span class="ref">📄 08-functions</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="f2" />
+            <label for="f2">
+              دوال النصوص: <code>split</code>, <code>join</code>,
+              <code>lower</code>, <code>upper</code>, <code>substr</code>
+              <span class="ref">📄 08-functions</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="f3" />
+            <label for="f3">
+              دوال المجموعات: <code>length</code>, <code>index</code>,
+              <code>element</code>, <code>contains</code>
+              <span class="ref">📄 08-functions</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="f4" />
+            <label for="f4">
+              دوال الخرائط: <code>keys</code>, <code>values</code>,
+              <code>lookup</code>
+              <span class="ref">📄 08-functions</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="f5" />
+            <label for="f5">
+              التعبير الشرطي: <code>condition ? true : false</code>
+              <span class="ref">📄 08-functions</span>
+            </label>
+          </div>
+        </div>
+
+        <h3>🔄 الـ Dynamic Blocks والـ Splat</h3>
+        <div class="checklist">
+          <div class="checklist-item">
+            <input type="checkbox" id="dyn1" />
+            <label for="dyn1">
+              الـ Dynamic Block:
+              <code>dynamic "name" { for_each = ... content { } }</code>
+              <span class="ref">📄 09-dynamic-blocks</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="dyn2" />
+            <label for="dyn2">
+              الـ <code>iterator</code> argument
+              <span class="ref">📄 09-dynamic-blocks</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="dyn3" />
+            <label for="dyn3">
+              الـ Splat Expression: <code>resource[*].attribute</code>
+              <span class="ref">📄 09-dynamic-blocks</span>
+            </label>
+          </div>
+        </div>
+
+        <h3>🔧 الـ Tainting والـ Import والـ Debugging</h3>
+        <div class="checklist">
+          <div class="checklist-item">
+            <input type="checkbox" id="t1" />
+            <label for="t1">
+              الـ Tainting: ماذا يحدث عند فشل الـ provisioner
+              <span class="ref">📄 10-tainting</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="t2" />
+            <label for="t2">
+              <code>tofu apply -replace</code> و <code>tofu untaint</code>
+              <span class="ref">📄 10-tainting</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="t3" />
+            <label for="t3">
+              الـ Import: <code>tofu import</code> والـ
+              <code>import</code> block
+              <span class="ref">📄 10-tainting</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="t4" />
+            <label for="t4">
+              الـ Debugging: <code>TF_LOG</code> و <code>TF_LOG_PATH</code>
+              <span class="ref">📄 10-tainting</span>
+            </label>
+          </div>
+        </div>
+
+        <h3>🔄 الترحيل من/إلى Terraform</h3>
+        <div class="checklist">
+          <div class="checklist-item">
+            <input type="checkbox" id="mig1" />
+            <label for="mig1">
+              خطوات الترحيل إلى OpenTofu
+              <span class="ref">📄 11-migration</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="mig2" />
+            <label for="mig2">
+              الترحيل العكسي إلى Terraform
+              <span class="ref">📄 11-migration</span>
+            </label>
+          </div>
+          <div class="checklist-item">
+            <input type="checkbox" id="mig3" />
+            <label for="mig3">
+              التوافق: Terraform 1.6 ⇄ OpenTofu 1.6
+              <span class="ref">📄 11-migration</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Interview Questions -->
+      <div class="section">
+        <h2>🎤 أسئلة المقابلات الشاملة</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          مرر الماوس على السؤال لعرض الإجابة. هذه الأسئلة هي الأكثر شيوعاً في
+          مقابلات DevOps.
+        </p>
+
+        <h3><span class="badge badge-basic">أساسي</span> أسئلة للمبتدئين</h3>
+
+        <div class="question-card">
+          <div class="question">ما هو OpenTofu ولماذا نستخدمه؟</div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            OpenTofu هو أداة Infrastructure as Code (IaC) مفتوحة المصدر، فرع من
+            Terraform. يُستخدم لإنشاء وإدارة البنية التحتية عبر الكود. يسمح
+            بإدارة الموارد عبر مزودين مختلفين (AWS, Azure, GCP) باستخدام نفس
+            المنطق وبناء الجملة.
+          </div>
+        </div>
+
+        <div class="question-card">
+          <div class="question">ما هي دورة العمل الأساسية في OpenTofu؟</div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            1. <code>tofu init</code>: تهيئة المشروع وتنزيل الـ Providers<br />
+            2. <code>tofu plan</code>: عرض ما سيحدث دون تنفيذه (Dry Run)<br />
+            3. <code>tofu apply</code>: تنفيذ التغييرات فعلياً<br />
+            4. <code>tofu destroy</code>: حذف جميع الموارد
+          </div>
+        </div>
+
+        <div class="question-card">
+          <div class="question">ما هو ملف الحالة ولماذا هو مهم؟</div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            ملف الحالة (<code>terraform.tfstate</code>) هو مصدر الحقيقة لـ
+            OpenTofu. يحتوي على جميع تفاصيل البنية التحتية المُنشأة (المعرفات،
+            السمات، الاعتماديات). يُستخدم لمقارنة الحالة الحالية مع الإعدادات
+            المطلوبة لتحديد ما يجب إنشاؤه أو تحديثه أو حذفه.
+          </div>
+        </div>
+
+        <div class="question-card">
+          <div class="question">
+            ما الفرق بين <code>resource</code> و <code>data source</code>؟
+          </div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            <strong>Resource:</strong> يُستخدم لإنشاء وتعديل وحذف البنية التحتية
+            (مُدار بواسطة OpenTofu).<br />
+            <strong>Data Source:</strong> يُستخدم فقط لقراءة معلومات من موارد
+            موجودة مسبقاً (غير مُدار).
+          </div>
+        </div>
+
+        <h3><span class="badge badge-medium">متوسط</span> أسئلة للمتوسطين</h3>
+
+        <div class="question-card">
+          <div class="question">ما الفرق بين الاعتماد الضمني والصريح؟</div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            <strong>الاعتماد الضمني:</strong> يحدث تلقائياً عندما يستخدم مورد
+            سمة من مورد آخر عبر الـ Reference Expression.<br />
+            <strong>الاعتماد الصريح:</strong> يُحدد يدوياً باستخدام
+            <code>depends_on</code> عندما لا يوجد استخدام للسمات.
+          </div>
+        </div>
+
+        <div class="question-card">
+          <div class="question">
+            ما الفرق بين <code>count</code> و <code>for_each</code>؟
+          </div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            <strong><code>count</code>:</strong> يُنشئ الموارد كقائمة مع فهارس
+            رقمية. عند حذف عنصر، تتغير فهارس جميع العناصر التالية (مشكلة
+            الإزاحة).<br />
+            <strong><code>for_each</code>:</strong> يُنشئ الموارد كخريطة مع
+            مفاتيح فريدة. عند حذف عنصر، يُحذف فقط العنصر المحدد بمفتاحه.<br />
+            لذلك، <code>for_each</code> أكثر أماناً للإدارة الديناميكية.
+          </div>
+        </div>
+
+        <div class="question-card">
+          <div class="question">ما هي قواعد دورة الحياة الثلاثة؟</div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            1. <code>create_before_destroy</code>: يُنشئ المورد الجديد قبل حذف
+            القديم (Zero Downtime).<br />
+            2. <code>prevent_destroy</code>: يمنع حذف المورد من تغييرات
+            الإعدادات (لا يمنع <code>tofu destroy</code>).<br />
+            3. <code>ignore_changes</code>: يتجاهل تغييرات معينة في السمات.
+          </div>
+        </div>
+
+        <div class="question-card">
+          <div class="question">لماذا لا يجب وضع ملف الحالة في Git؟</div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            لأن ملف الحالة يحتوي معلومات حساسة (كلمات مرور، مفاتيح SSH، إلخ).
+            بدلاً من ذلك، استخدم Remote Backend مثل S3 أو Azure Blob مع تشفير
+            وقفل الحالة. أضف <code>*.tfstate</code> إلى <code>.gitignore</code>.
+          </div>
+        </div>
+
+        <div class="question-card">
+          <div class="question">
+            ما الفرق بين <code>tofu validate</code> و <code>tofu plan</code>؟
+          </div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            <strong><code>validate</code>:</strong> يتحقق من صحة الـ syntax فقط
+            (لا يتصل بالـ Provider).<br />
+            <strong><code>plan</code>:</strong> يتحقق من القيم ويولد خطة تنفيذ
+            (يتصل بالـ Provider).<br />
+            قد ينجح <code>validate</code> لكن يفشل <code>apply</code> إذا كانت
+            القيم غير صالحة.
+          </div>
+        </div>
+
+        <h3><span class="badge badge-advanced">متقدم</span> أسئلة للمتقدمين</h3>
+
+        <div class="question-card">
+          <div class="question">ما هو الـ Tainting وكيف تتعامل معه؟</div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            عندما يفشل إنشاء مورد (أو أي خطوة أثناء الإنشاء مثل الـ
+            provisioner)، يتم تعليم المورد كـ <strong>tainted</strong>. في الـ
+            <code>apply</code> التالي، سيتم إعادة إنشاء المورد بالكامل.<br />
+            للتعامل معه:<br />
+            • <code>tofu apply -replace=resource.name</code>: إجبار إعادة
+            الإنشاء (البديل الحديث)<br />
+            • <code>tofu untaint resource.name</code>: إلغاء الـ taint بعد إصلاح
+            المشكلة
+          </div>
+        </div>
+
+        <div class="question-card">
+          <div class="question">
+            كيف تستورد مورداً موجوداً مسبقاً إلى OpenTofu؟
+          </div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            الطريقة 1:
+            <code>tofu import resourceType.resourceName resource_id</code><br />
+            الطريقة 2: استخدام <code>import</code> block في الكود.<br />
+            <strong>ملاحظة مهمة:</strong> الاستيراد يضيف المورد إلى الـ state
+            فقط. يجب يدوياً ملء الـ <code>resource</code> block بجميع السمات.
+          </div>
+        </div>
+
+        <div class="question-card">
+          <div class="question">ما هي الـ Dynamic Blocks ومتى تستخدمها؟</div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            الـ Dynamic Blocks تُستخدم لإنشاء عدة نسخ من الـ
+            <strong>nested blocks</strong> ديناميكياً. تُستخدم عندما لا يمكن
+            استخدام <code>count</code> أو <code>for_each</code> مباشرة على الـ
+            nested block.<br />
+            مثال شائع: إنشاء عدة <code>ingress</code> rules في
+            <code>aws_security_group</code>.
+          </div>
+        </div>
+
+        <div class="question-card">
+          <div class="question">
+            ما الفرق بين <code>~&gt; 2.2</code> و <code>~&gt; 2.2.0</code>؟
+          </div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            <strong><code>~&gt; 2.2</code>:</strong> يسمح بأي إصدار من 2.2 حتى
+            أقل من 3.0 (يشمل 2.3, 2.4).<br />
+            <strong><code>~&gt; 2.2.0</code>:</strong> يسمح فقط بإصدارات الترقيع
+            2.2.x (لا يشمل 2.3).
+          </div>
+        </div>
+
+        <div class="question-card">
+          <div class="question">
+            ما هي خطوات الترحيل من Terraform إلى OpenTofu؟
+          </div>
+          <div class="hint">مرر الماوس لعرض الإجابة</div>
+          <div class="answer">
+            1. إنشاء نسخة احتياطية من ملف الحالة.<br />
+            2. تثبيت OpenTofu.<br />
+            3. تشغيل <code>tofu init</code> لتهيئة المشروع.<br />
+            4. فحص الخطة بـ <code>tofu plan</code>.<br />
+            5. اختبار بتغيير صغير غير حرج.<br />
+            6. تطبيق التغييرات بـ <code>tofu apply</code>.
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Study Plan -->
+      <div class="section">
+        <h2>📅 خطة الدراسة للشهادة (4 أسابيع)</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          خطة مكثفة للتحضير لشهادة OpenTofu/Terraform Associate.
+        </p>
+
+        <div class="study-plan">
+          <div class="week-card week1">
+            <h4>الأسبوع 1: الأساسيات</h4>
+            <ul>
+              <li>📄 المراجعة: 01, 02, 03</li>
+              <li>🧪 التطبيق: إنشاء موارد محلية</li>
+              <li>📝 التمرين: 10 أسئلة يومياً</li>
+              <li>🎯 الهدف: إتقان دورة العمل</li>
+            </ul>
+          </div>
+          <div class="week-card week2">
+            <h4>الأسبوع 2: الحالة والموارد</h4>
+            <ul>
+              <li>📄 المراجعة: 04, 05, 06</li>
+              <li>🧪 التطبيق: count و for_each</li>
+              <li>📝 التمرين: 10 أسئلة يومياً</li>
+              <li>🎯 الهدف: فهم الـ State بعمق</li>
+            </ul>
+          </div>
+          <div class="week-card week3">
+            <h4>الأسبوع 3: المفاهيم المتقدمة</h4>
+            <ul>
+              <li>📄 المراجعة: 07, 08, 09</li>
+              <li>🧪 التطبيق: Workspaces و Modules</li>
+              <li>📝 التمرين: 10 أسئلة يومياً</li>
+              <li>🎯 الهدف: إتقان الـ Functions</li>
+            </ul>
+          </div>
+          <div class="week-card week4">
+            <h4>الأسبوع 4: المراجعة النهائية</h4>
+            <ul>
+              <li>📄 المراجعة: 10, 11, 12</li>
+              <li>🧪 التطبيق: مشروع كامل</li>
+              <li>📝 التمرين: اختبارات تجريبية</li>
+              <li>🎯 الهدف: الاستعداد للامتحان</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="success-box">
+          <h4>✅ نصائح للنجاح في الامتحان</h4>
+          <ul style="margin-right: 20px; margin-top: 10px">
+            <li>
+              <strong>افهم، لا تحفظ:</strong> الامتحان يختبر الفهم، ليس الحفظ
+            </li>
+            <li><strong>طبق عملياً:</strong> كل مفهوم تعلمه، جربه بيدك</li>
+            <li>
+              <strong>اقرأ الوثائق:</strong> الوثائق الرسمية هي المصدر الأول
+            </li>
+            <li><strong>حل أسئلة تجريبية:</strong> اختبر نفسك باستمرار</li>
+            <li>
+              <strong>انضم للمجتمع:</strong> OpenTofu Slack و GitHub Discussions
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Section 4: Commands Quick Reference -->
+      <div class="section">
+        <h2>⚡ مرجع سريع لجميع الأوامر</h2>
+
+        <table class="command-table">
+          <thead>
+            <tr>
+              <th>الفئة</th>
+              <th>الأمر</th>
+              <th>الوظيفة</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td rowspan="5"><strong>الأساسيات</strong></td>
+              <td><code>tofu init</code></td>
+              <td>تهيئة المشروع</td>
+            </tr>
+            <tr>
+              <td><code>tofu plan</code></td>
+              <td>عرض الخطة</td>
+            </tr>
+            <tr>
+              <td><code>tofu apply</code></td>
+              <td>تنفيذ التغييرات</td>
+            </tr>
+            <tr>
+              <td><code>tofu destroy</code></td>
+              <td>حذف جميع الموارد</td>
+            </tr>
+            <tr>
+              <td><code>tofu show</code></td>
+              <td>عرض الحالة الحالية</td>
+            </tr>
+            <tr>
+              <td rowspan="4"><strong>التحقق والتنسيق</strong></td>
+              <td><code>tofu validate</code></td>
+              <td>التحقق من الـ syntax</td>
+            </tr>
+            <tr>
+              <td><code>tofu fmt</code></td>
+              <td>تنسيق الكود</td>
+            </tr>
+            <tr>
+              <td><code>tofu providers</code></td>
+              <td>عرض الـ Providers</td>
+            </tr>
+            <tr>
+              <td><code>tofu graph</code></td>
+              <td>رسم بياني للاعتماديات</td>
+            </tr>
+            <tr>
+              <td rowspan="6"><strong>أوامر الحالة</strong></td>
+              <td><code>tofu state list</code></td>
+              <td>عرض الموارد في الحالة</td>
+            </tr>
+            <tr>
+              <td><code>tofu state show</code></td>
+              <td>عرض سمات مورد محدد</td>
+            </tr>
+            <tr>
+              <td><code>tofu state mv</code></td>
+              <td>إعادة تسمية/نقل مورد</td>
+            </tr>
+            <tr>
+              <td><code>tofu state rm</code></td>
+              <td>إزالة مورد من الإدارة</td>
+            </tr>
+            <tr>
+              <td><code>tofu state pull</code></td>
+              <td>تنزيل الحالة البعيدة</td>
+            </tr>
+            <tr>
+              <td><code>tofu state push</code></td>
+              <td>رفع الحالة المحلية</td>
+            </tr>
+            <tr>
+              <td rowspan="3"><strong>الـ Workspaces</strong></td>
+              <td><code>tofu workspace list</code></td>
+              <td>عرض الـ workspaces</td>
+            </tr>
+            <tr>
+              <td><code>tofu workspace new</code></td>
+              <td>إنشاء workspace جديد</td>
+            </tr>
+            <tr>
+              <td><code>tofu workspace select</code></td>
+              <td>التبديل إلى workspace</td>
+            </tr>
+            <tr>
+              <td rowspan="3"><strong>متقدم</strong></td>
+              <td><code>tofu apply -replace</code></td>
+              <td>إجبار إعادة إنشاء مورد</td>
+            </tr>
+            <tr>
+              <td><code>tofu untaint</code></td>
+              <td>إلغاء الـ taint</td>
+            </tr>
+            <tr>
+              <td><code>tofu import</code></td>
+              <td>استيراد مورد موجود</td>
+            </tr>
+            <tr>
+              <td rowspan="2"><strong>التصحيح</strong></td>
+              <td><code>TF_LOG=TRACE</code></td>
+              <td>تفعيل الـ logging</td>
+            </tr>
+            <tr>
+              <td><code>TF_LOG_PATH</code></td>
+              <td>مسار حفظ الـ log</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section 5: Next Steps -->
+      <div class="section">
+        <h2>🚀 الخطوات التالية</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          بعد إتقان الأساسيات، هذه هي الخطوات المقترحة للتقدم في رحلتك.
+        </p>
+
+        <div class="next-steps">
+          <div class="next-step-card azure">
+            <h4>☁️ الانتقال إلى Azure</h4>
+            <p>
+              كما اتفقنا، سننتقل الآن لتطبيق كل ما تعلمناه على Azure. سنبدأ بـ
+              <code>azurerm</code> provider وننشئ بنية تحتية حقيقية.
+            </p>
+          </div>
+          <div class="next-step-card project">
+            <h4>🏗️ مشروع عملي</h4>
+            <p>
+              بناء مشروع كامل على GitHub يوضح مهاراتك: VPC، Subnets، Security
+              Groups، VMs، Load Balancer.
+            </p>
+          </div>
+          <div class="next-step-card cert">
+            <h4>🎓 الشهادة</h4>
+            <p>
+              التحضير لشهادة Terraform Associate أو Azure Administrator. استخدم
+              هذا المرجع للمراجعة النهائية.
+            </p>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <h4>ℹ️ تذكير بالهدف (من MISSION.md)</h4>
+          <p>
+            <strong>الهدف:</strong> الحصول على شهادة ووظيفة في مجال
+            DevOps/Cloud، وبناء بنية تحتية حقيقية على Azure.<br />
+            <strong>النجاح:</strong> اجتياز الشهادة، بناء مرجع عام على GitHub،
+            تطبيق المفاهيم على Azure.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 6: File Index -->
+      <div class="section">
+        <h2>📚 فهرس المراجع</h2>
+
+        <table class="command-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الملف</th>
+              <th>الموضوع</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>01</td>
+              <td><code>01-basic-workflow-and-structure.html</code></td>
+              <td>دورة العمل الأساسية وهيكلة الملفات</td>
+            </tr>
+            <tr>
+              <td>02</td>
+              <td><code>02-variables-and-types.html</code></td>
+              <td>المتغيرات وأنواع البيانات</td>
+            </tr>
+            <tr>
+              <td>03</td>
+              <td><code>03-resources-and-dependencies.html</code></td>
+              <td>الموارد والاعتماديات</td>
+            </tr>
+            <tr>
+              <td>04</td>
+              <td><code>04-state-and-lifecycle.html</code></td>
+              <td>الحالة وقواعد دورة الحياة</td>
+            </tr>
+            <tr>
+              <td>05</td>
+              <td><code>05-data-sources-count-foreach.html</code></td>
+              <td>مصادر البيانات و count/for_each</td>
+            </tr>
+            <tr>
+              <td>06</td>
+              <td><code>06-version-constraints-modules.html</code></td>
+              <td>قيود الإصدارات والوحدات</td>
+            </tr>
+            <tr>
+              <td>07</td>
+              <td><code>07-provisioners-workspaces.html</code></td>
+              <td>الـ Provisioners والـ Workspaces</td>
+            </tr>
+            <tr>
+              <td>08</td>
+              <td><code>08-functions-conditional-expressions.html</code></td>
+              <td>الدوال والتعابير الشرطية</td>
+            </tr>
+            <tr>
+              <td>09</td>
+              <td><code>09-dynamic-blocks-splat.html</code></td>
+              <td>الـ Dynamic Blocks والـ Splat</td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td><code>10-tainting-import-debugging.html</code></td>
+              <td>الـ Tainting والـ Import والـ Debugging</td>
+            </tr>
+            <tr>
+              <td>11</td>
+              <td><code>11-migration-terraform-opentofu.html</code></td>
+              <td>الترحيل من/إلى Terraform</td>
+            </tr>
+            <tr>
+              <td>12</td>
+              <td><code>12-final-review-checklist.html</code></td>
+              <td>الملخص الشامل للمراجعة النهائية</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Navigation -->
+      <div class="nav-links">
+        <a href="11-migration-terraform-opentofu.html"
+          >→ السابق: الترحيل من/إلى Terraform</a
+        >
+        <a href="01-basic-workflow-and-structure.html">العودة للبداية ←</a>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p>
+          📚 <strong>المصدر الرئيسي:</strong>
+          <a href="https://opentofu.org/docs/" target="_blank"
+            >OpenTofu Official Documentation</a
+          >
+        </p>
+        <p style="margin-top: 10px">
+          🎓 <strong>الهدف:</strong> الحصول على شهادة DevOps ووظيفة في مجال الـ
+          Cloud
+        </p>
+        <p
+          style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light)"
+        >
+          تم الإنشاء بواسطة Teaching Workspace | المرجع رقم: 12 (الأخير)
+        </p>
+        <p
+          style="margin-top: 15px; font-size: 0.85rem; color: var(--text-light)"
+        >
+          🎉 مبروك! لقد أكملت جميع المراجع الأساسية. الخطوة التالية: التطبيق
+          العملي على Azure!
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

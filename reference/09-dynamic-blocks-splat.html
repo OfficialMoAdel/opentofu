@@ -1,0 +1,680 @@
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenTofu - Dynamic Blocks & Splat Expressions</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+      .flow-box {
+          background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+          border: 2px solid var(--primary);
+          border-radius: 10px;
+          padding: 15px 20px;
+          text-align: center;
+          min-width: 120px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🔄 OpenTofu - Dynamic Blocks & Splat Expressions</h1>
+        <p>مرجع شامل للكتل الديناميكية وتعابير الانتشار</p>
+      </header>
+
+      <!-- Section 1: Overview -->
+      <div class="section">
+        <h2>📋 نظرة عامة (Overview)</h2>
+        <p style="margin-bottom: 20px; color: var(--text-light)">
+          الـ Dynamic Blocks تحل مشكلة تكرار الـ nested blocks (مثل الـ ingress
+          rules في الـ Security Group). الـ Splat Expressions تتيح استخراج سمات
+          من جميع عناصر قائمة.
+        </p>
+
+        <div class="concepts-grid">
+          <div class="concept-card dynamic">
+            <h4>dynamic</h4>
+            <p>إنشاء nested blocks ديناميكياً</p>
+          </div>
+          <div class="concept-card splat">
+            <h4>[*]</h4>
+            <p>استخراج سمات من جميع العناصر</p>
+          </div>
+          <div class="concept-card vpc">
+            <h4>Nested Blocks</h4>
+            <p>كتل داخل الـ resource</p>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <h4>ℹ️ ما هي الـ Nested Blocks؟</h4>
+          <p>
+            هي كتل تُعرّف <strong>داخل</strong> الـ <code>resource</code> block.
+            مثال: كتلة <code>ingress</code> داخل
+            <code>aws_security_group</code>. لا يمكن استخدام
+            <code>count</code> أو <code>for_each</code> مباشرة على هذه الكتل،
+            لذلك نحتاج إلى الـ Dynamic Blocks.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 2: The Problem -->
+      <div class="section">
+        <h2>❌ المشكلة: تكرار الـ Nested Blocks</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          لنفترض أننا نريد إنشاء Security Group يسمح بالمنافذ 22 و 8080. بدون
+          الـ Dynamic Blocks، سنحتاج إلى تكرار كتلة الـ <code>ingress</code>.
+        </p>
+
+        <div class="comparison-grid">
+          <div class="comparison-card bad">
+            <h4>❌ الطريقة اليدوية (سيئة)</h4>
+            <div class="code-block">
+              <pre><span class="keyword">resource</span> <span class="string">"aws_security_group"</span> <span class="string">"backend-sg"</span> {
+  <span class="argument">name</span>   = <span class="string">"backend-sg"</span>
+  <span class="argument">vpc_id</span> = <span class="resource">aws_vpc.backend-vpc.id</span>
+
+  <span class="comment"># ← كتلة مكررة رقم 1</span>
+  <span class="keyword">ingress</span> {
+    <span class="argument">from_port</span>   = <span class="number">22</span>
+    <span class="argument">to_port</span>     = <span class="number">22</span>
+    <span class="argument">protocol</span>    = <span class="string">"tcp"</span>
+    <span class="argument">cidr_blocks</span> = [<span class="string">"0.0.0.0/0"</span>]
+  }
+
+  <span class="comment"># ← كتلة مكررة رقم 2</span>
+  <span class="keyword">ingress</span> {
+    <span class="argument">from_port</span>   = <span class="number">8080</span>
+    <span class="argument">to_port</span>     = <span class="number">8080</span>
+    <span class="argument">protocol</span>    = <span class="string">"tcp"</span>
+    <span class="argument">cidr_blocks</span> = [<span class="string">"0.0.0.0/0"</span>]
+  }
+
+  <span class="comment"># ← إذا أردنا إضافة منفذ 443؟</span>
+  <span class="comment"># سنحتاج إلى كتلة ثالثة مكررة!</span>
+}</pre>
+            </div>
+            <ul>
+              <li>❌ كود طويل ومكرر</li>
+              <li>❌ صعب الصيانة</li>
+              <li>❌ إضافة منفذ جديد = كتلة جديدة</li>
+            </ul>
+          </div>
+          <div class="comparison-card good">
+            <h4>✅ الطريقة الديناميكية (جيدة)</h4>
+            <div class="code-block">
+              <pre><span class="keyword">variable</span> <span class="string">"ingress_ports"</span> {
+  <span class="argument">type</span>    = <span class="keyword">list</span>
+  <span class="argument">default</span> = [<span class="number">22</span>, <span class="number">8080</span>]
+}
+
+<span class="keyword">resource</span> <span class="string">"aws_security_group"</span> <span class="string">"backend-sg"</span> {
+  <span class="argument">name</span>   = <span class="string">"backend-sg"</span>
+  <span class="argument">vpc_id</span> = <span class="resource">aws_vpc.backend-vpc.id</span>
+
+  <span class="comment"># ← كتلة ديناميكية واحدة!</span>
+  <span class="keyword">dynamic</span> <span class="string">"ingress"</span> {
+    <span class="argument">for_each</span> = <span class="variable">var.ingress_ports</span>
+
+    <span class="keyword">content</span> {
+      <span class="argument">from_port</span>   = <span class="variable">ingress.value</span>
+      <span class="argument">to_port</span>     = <span class="variable">ingress.value</span>
+      <span class="argument">protocol</span>    = <span class="string">"tcp"</span>
+      <span class="argument">cidr_blocks</span> = [<span class="string">"0.0.0.0/0"</span>]
+    }
+  }
+}</pre>
+            </div>
+            <ul>
+              <li>✅ كود نظيف وقصير</li>
+              <li>✅ سهل الصيانة</li>
+              <li>✅ إضافة منفذ = إضافة عنصر للقائمة</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Dynamic Block Syntax -->
+      <div class="section">
+        <h2>🔧 صيغة الـ Dynamic Block</h2>
+
+        <div class="syntax-box">
+          <div class="formula">
+            dynamic "BLOCK_NAME" { for_each = COLLECTION content { ... } }
+          </div>
+          <div class="parts">
+            <div class="part">
+              <div class="part-label">اسم الكتلة</div>
+              <div class="part-value">"ingress"</div>
+            </div>
+            <div class="part">
+              <div class="part-label">المجموعة للتكرار</div>
+              <div class="part-value">var.ingress_ports</div>
+            </div>
+            <div class="part">
+              <div class="part-label">محتوى الكتلة</div>
+              <div class="part-value">content { ... }</div>
+            </div>
+          </div>
+        </div>
+
+        <h3>📄 المكونات الأساسية</h3>
+        <table class="command-table">
+          <thead>
+            <tr>
+              <th>المكون</th>
+              <th>الوظيفة</th>
+              <th>مثال</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>dynamic "name"</code></td>
+              <td>اسم الكتلة التي سيتم تكرارها</td>
+              <td><code>dynamic "ingress"</code></td>
+            </tr>
+            <tr>
+              <td><code>for_each</code></td>
+              <td>المجموعة التي سيتم التكرار عليها</td>
+              <td><code>for_each = var.ingress_ports</code></td>
+            </tr>
+            <tr>
+              <td><code>content</code></td>
+              <td>المحتوى الذي سيتم تكراره</td>
+              <td><code>content { from_port = ... }</code></td>
+            </tr>
+            <tr>
+              <td><code>iterator</code></td>
+              <td>اسم بديل للمتكرر (اختياري)</td>
+              <td><code>iterator = port</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="tip-box">
+          <h4>💡 كيف تعمل؟</h4>
+          <p>
+            الـ <code>dynamic</code> block يقوم بالتكرار على كل عنصر في
+            المجموعة، وينشئ نسخة من الـ <code>content</code> لكل عنصر. يمكن
+            الوصول إلى قيمة العنصر الحالي عبر <code>block_name.value</code>.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 4: Practical Example -->
+      <div class="section">
+        <h2>🎯 مثال عملي كامل: إنشاء VPC مع Security Group</h2>
+
+        <h3>📄 الخطوة 1: إنشاء الـ VPC</h3>
+        <div class="code-block">
+          <pre><span class="keyword">resource</span> <span class="string">"aws_vpc"</span> <span class="string">"backend-vpc"</span> {
+  <span class="argument">cidr_block</span> = <span class="string">"10.0.0.0/16"</span>
+  <span class="argument">tags</span> = {
+    <span class="argument">Name</span> = <span class="string">"backend-vpc"</span>
+  }
+}</pre>
+        </div>
+
+        <h3>📄 الخطوة 2: إنشاء الـ Subnet</h3>
+        <div class="code-block">
+          <pre><span class="keyword">resource</span> <span class="string">"aws_subnet"</span> <span class="string">"private-subnet"</span> {
+  <span class="argument">vpc_id</span>     = <span class="resource">aws_vpc.backend-vpc.id</span>  <span class="comment"># ← Implicit Dependency</span>
+  <span class="argument">cidr_block</span> = <span class="string">"10.0.2.0/24"</span>
+  <span class="argument">tags</span> = {
+    <span class="argument">Name</span> = <span class="string">"private-subnet"</span>
+  }
+}</pre>
+        </div>
+
+        <h3>📄 الخطوة 3: إنشاء الـ Security Group مع Dynamic Blocks</h3>
+        <div class="code-block">
+          <pre><span class="comment"># variables.tf</span>
+<span class="keyword">variable</span> <span class="string">"ingress_ports"</span> {
+  <span class="argument">type</span>    = <span class="keyword">list</span>
+  <span class="argument">default</span> = [<span class="number">22</span>, <span class="number">8080</span>]
+}
+
+<span class="comment"># main.tf</span>
+<span class="keyword">resource</span> <span class="string">"aws_security_group"</span> <span class="string">"backend-sg"</span> {
+  <span class="argument">name</span>   = <span class="string">"backend-sg"</span>
+  <span class="argument">vpc_id</span> = <span class="resource">aws_vpc.backend-vpc.id</span>
+
+  <span class="comment"># ← Dynamic Block</span>
+  <span class="keyword">dynamic</span> <span class="string">"ingress"</span> {
+    <span class="argument">for_each</span> = <span class="variable">var.ingress_ports</span>
+
+    <span class="keyword">content</span> {
+      <span class="argument">from_port</span>   = <span class="variable">ingress.value</span>  <span class="comment"># ← قيمة العنصر الحالي</span>
+      <span class="argument">to_port</span>     = <span class="variable">ingress.value</span>
+      <span class="argument">protocol</span>    = <span class="string">"tcp"</span>
+      <span class="argument">cidr_blocks</span> = [<span class="string">"0.0.0.0/0"</span>]
+    }
+  }
+}</pre>
+        </div>
+
+        <h3>🔍 النتيجة</h3>
+        <div class="flow-diagram">
+          <div class="flow-box">
+            <h5>var.ingress_ports</h5>
+            <p>[22, 8080]</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div
+            class="flow-box"
+            style="
+              border-color: #22c55e;
+              background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            "
+          >
+            <h5 style="color: #16a34a">ingress #1</h5>
+            <p>from_port: 22<br />to_port: 22</p>
+          </div>
+          <div
+            class="flow-box"
+            style="
+              border-color: #22c55e;
+              background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            "
+          >
+            <h5 style="color: #16a34a">ingress #2</h5>
+            <p>from_port: 8080<br />to_port: 8080</p>
+          </div>
+        </div>
+
+        <div class="success-box">
+          <h4>✅ إضافة منفذ جديد</h4>
+          <p>لإضافة منفذ 443، فقط أضفه إلى القائمة:</p>
+          <div class="code-block">
+            <pre><span class="keyword">variable</span> <span class="string">"ingress_ports"</span> {
+  <span class="argument">type</span>    = <span class="keyword">list</span>
+  <span class="argument">default</span> = [<span class="number">22</span>, <span class="number">8080</span>, <span class="number">443</span>]  <span class="comment"># ← أضفنا 443</span>
+}</pre>
+          </div>
+          <p>لا حاجة لتعديل الـ <code>dynamic</code> block!</p>
+        </div>
+      </div>
+
+      <!-- Section 5: Iterator -->
+      <div class="section">
+        <h2>🔁 استخدام الـ Iterator (اختياري)</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          افتراضياً، يمكن الوصول إلى قيمة العنصر عبر اسم الـ
+          <code>dynamic</code> block. يمكن تغيير هذا الاسم باستخدام
+          <code>iterator</code>.
+        </p>
+
+        <h3>📄 بدون <code>iterator</code> (الافتراضي)</h3>
+        <div class="code-block">
+          <pre><span class="keyword">dynamic</span> <span class="string">"ingress"</span> {
+  <span class="argument">for_each</span> = <span class="variable">var.ingress_ports</span>
+
+  <span class="keyword">content</span> {
+    <span class="argument">from_port</span> = <span class="variable">ingress.value</span>  <span class="comment"># ← اسم الـ dynamic block</span>
+    <span class="argument">to_port</span>   = <span class="variable">ingress.value</span>
+  }
+}</pre>
+        </div>
+
+        <h3>📄 مع <code>iterator</code></h3>
+        <div class="code-block">
+          <pre><span class="keyword">dynamic</span> <span class="string">"ingress"</span> {
+  <span class="argument">iterator</span> = <span class="variable">port</span>  <span class="comment"># ← اسم بديل</span>
+  <span class="argument">for_each</span> = <span class="variable">var.ingress_ports</span>
+
+  <span class="keyword">content</span> {
+    <span class="argument">from_port</span> = <span class="variable">port.value</span>  <span class="comment"># ← نستخدم الاسم الجديد</span>
+    <span class="argument">to_port</span>   = <span class="variable">port.value</span>
+  }
+}</pre>
+        </div>
+
+        <div class="tip-box">
+          <h4>💡 متى تستخدم الـ <code>iterator</code>؟</h4>
+          <ul style="margin-right: 20px; margin-top: 10px">
+            <li>عندما يكون اسم الـ <code>dynamic</code> block طويلاً</li>
+            <li>عندما تريد اسماً أكثر وضوحاً</li>
+            <li>عندما يكون هناك <code>dynamic</code> blocks متداخلة</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Section 6: Splat Expressions -->
+      <div class="section">
+        <h2>✨ تعابير الانتشار (Splat Expressions)</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          تُستخدم لاستخراج سمة من <strong>جميع</strong> عناصر قائمة. الصيغة
+          تستخدم الرمز <code>[*]</code>.
+        </p>
+
+        <div class="syntax-box">
+          <div class="formula">resource.name.attribute[*].sub_attribute</div>
+          <div class="parts">
+            <div class="part">
+              <div class="part-label">المورد</div>
+              <div class="part-value">aws_security_group.backend-sg</div>
+            </div>
+            <div class="part">
+              <div class="part-label">رمز الانتشار</div>
+              <div class="part-value">[*]</div>
+            </div>
+            <div class="part">
+              <div class="part-label">السمة الفرعية</div>
+              <div class="part-value">to_port</div>
+            </div>
+          </div>
+        </div>
+
+        <h3>📄 مثال: استخراج جميع المنافذ</h3>
+        <div class="code-block">
+          <pre><span class="comment"># متغير الإخراج لعرض جميع المنافذ</span>
+<span class="keyword">output</span> <span class="string">"to_ports"</span> {
+  <span class="argument">value</span> = <span class="resource">aws_security_group.backend-sg.ingress</span>[<span class="splat">*</span>].<span class="attr">to_port</span>
+  <span class="comment">#                                    ↑              ↑         ↑</span>
+  <span class="comment">#                                    المورد        الانتشار   السمة</span>
+}</pre>
+        </div>
+
+        <h3>🔧 النتيجة</h3>
+        <div class="code-block">
+          <pre><span class="keyword">tofu output</span>
+<span class="comment"># النتيجة:</span>
+<span class="output">to_ports = [
+  22,
+  8080,
+]</span></pre>
+        </div>
+
+        <div class="info-box">
+          <h4>ℹ️ كيف يعمل الـ Splat؟</h4>
+          <p>
+            الـ <code>ingress</code> rules تُنشأ كـ <strong>قائمة</strong> داخل
+            الـ <code>aws_security_group</code>. الرمز <code>[*]</code> يخبر
+            OpenTofu بالتكرار على <strong>جميع</strong> عناصر القائمة واستخراج
+            السمة المحددة من كل عنصر.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 7: More Examples -->
+      <div class="section">
+        <h2>🎯 أمثلة إضافية</h2>
+
+        <h3>📄 مثال 1: استخراج عناوين IP من عدة ماكينات</h3>
+        <div class="code-block">
+          <pre><span class="comment"># إنشاء 3 ماكينات باستخدام count</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"web"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.instance_type</span>
+  <span class="argument">count</span>         = <span class="number">3</span>
+}
+
+<span class="comment"># استخراج جميع الـ IPs</span>
+<span class="keyword">output</span> <span class="string">"all_ips"</span> {
+  <span class="argument">value</span> = <span class="resource">aws_instance.web</span>[<span class="splat">*</span>].<span class="attr">public_ip</span>
+}
+
+<span class="comment"># النتيجة:</span>
+<span class="output">all_ips = [
+  "54.214.162.160",
+  "54.214.162.161",
+  "54.214.162.162",
+]</span></pre>
+        </div>
+
+        <h3>📄 مثال 2: استخراج سمات من موارد مع <code>for_each</code></h3>
+        <div class="code-block">
+          <pre><span class="comment"># ملاحظة: مع for_each، الموارد تُنشأ كـ map وليس list</span>
+<span class="comment"># لذلك لا يمكن استخدام [*] مباشرة</span>
+
+<span class="comment"># بدلاً من ذلك، استخدم:</span>
+<span class="keyword">output</span> <span class="string">"all_ids"</span> {
+  <span class="argument">value</span> = <span class="keyword">values</span>(<span class="resource">aws_instance.web</span>)[<span class="splat">*</span>].<span class="attr">id</span>
+  <span class="comment">#        ↑                              ↑</span>
+  <span class="comment">#        تحويل الـ map إلى قائمة        الانتشار</span>
+}</pre>
+        </div>
+
+        <div class="warning-box">
+          <h4>⚠️ تنبيه مهم</h4>
+          <p>
+            الـ <code>[*]</code> يعمل فقط مع <strong>القوائم</strong>. إذا كان
+            المورد مُنشأ بـ <code>for_each</code> (كـ map)، يجب أولاً تحويله إلى
+            قائمة باستخدام <code>values()</code>.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 8: Common Mistakes -->
+      <div class="section">
+        <h2>⚠️ أخطاء شائعة يجب تجنبها</h2>
+
+        <div class="warning-box">
+          <h4>❌ خطأ 1: استخدام <code>count</code> مع الـ nested blocks</h4>
+          <div class="code-block">
+            <pre><span class="comment"># ❌ خطأ - count لا يعمل مع nested blocks</span>
+<span class="keyword">ingress</span> {
+  <span class="argument">count</span>     = <span class="keyword">length</span>(<span class="variable">var.ports</span>)
+  <span class="argument">from_port</span> = <span class="variable">var.ports[count.index]</span>
+  <span class="comment"># ...</span>
+}
+
+<span class="comment"># ✅ صحيح - استخدم dynamic block</span>
+<span class="keyword">dynamic</span> <span class="string">"ingress"</span> {
+  <span class="argument">for_each</span> = <span class="variable">var.ports</span>
+  <span class="keyword">content</span> {
+    <span class="argument">from_port</span> = <span class="variable">ingress.value</span>
+    <span class="comment"># ...</span>
+  }
+}</pre>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <h4>❌ خطأ 2: نسيان الـ <code>content</code> block</h4>
+          <div class="code-block">
+            <pre><span class="comment"># ❌ خطأ - dynamic بدون content لن يعمل</span>
+<span class="keyword">dynamic</span> <span class="string">"ingress"</span> {
+  <span class="argument">for_each</span> = <span class="variable">var.ingress_ports</span>
+}
+
+<span class="comment"># ✅ صحيح - يجب أن يحتوي على content</span>
+<span class="keyword">dynamic</span> <span class="string">"ingress"</span> {
+  <span class="argument">for_each</span> = <span class="variable">var.ingress_ports</span>
+  <span class="keyword">content</span> {
+    <span class="argument">from_port</span> = <span class="variable">ingress.value</span>
+    <span class="comment"># ...</span>
+  }
+}</pre>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <h4>
+            ❌ خطأ 3: استخدام <code>[*]</code> مع موارد <code>for_each</code>
+          </h4>
+          <div class="code-block">
+            <pre><span class="comment"># ❌ خطأ - for_each ينشئ map وليس list</span>
+<span class="argument">value</span> = <span class="resource">aws_instance.web</span>[<span class="splat">*</span>].<span class="attr">id</span>
+
+<span class="comment"># ✅ صحيح - تحويل الـ map إلى قائمة أولاً</span>
+<span class="argument">value</span> = <span class="keyword">values</span>(<span class="resource">aws_instance.web</span>)[<span class="splat">*</span>].<span class="attr">id</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 9: Interview Questions -->
+      <div class="section">
+        <h2>🎤 أسئلة مقابلات مهمة</h2>
+
+        <div class="interview-box">
+          <h4>سؤال 1: ما هي الـ Dynamic Blocks ومتى تستخدمها؟</h4>
+          <p>
+            الـ Dynamic Blocks تُستخدم لإنشاء <strong>عدة نسخ</strong> من الـ
+            <strong>_nested blocks</strong> ديناميكياً. تُستخدم عندما لا يمكن
+            استخدام <code>count</code> أو <code>for_each</code> مباشرة على الـ
+            _nested block. مثال شائع: إنشاء عدة <code>ingress</code> rules في
+            <code>aws_security_group</code>.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>سؤال 2: ما هي صيغة الـ Dynamic Block؟</h4>
+          <p>
+            <code
+              >dynamic "block_name" { for_each = collection content { ... }
+              }</code
+            ><br />
+            • <code>block_name</code>: اسم الكتلة التي سيتم تكرارها •
+            <code>for_each</code>: المجموعة للتكرار عليها •
+            <code>content</code>: المحتوى الذي سيتم تكراره • يمكن الوصول للقيمة
+            عبر <code>block_name.value</code>
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>سؤال 3: ما هو الـ Splat Expression؟</h4>
+          <p>
+            تعبير يُستخدم لاستخراج سمة من <strong>جميع</strong> عناصر قائمة.
+            الصيغة: <code>resource.attribute[*].sub_attribute</code>. مثال:
+            <code>aws_instance.web[*].public_ip</code> يستخرج جميع الـ IPs من
+            قائمة ماكينات.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>
+            سؤال 4: ما الفرق بين <code>count</code> و الـ
+            <code>dynamic</code> block؟
+          </h4>
+          <p>
+            <strong><code>count</code>:</strong> يُستخدم لإنشاء عدة
+            <strong>موارد</strong> من نفس الـ <code>resource</code> block.<br />
+            <strong><code>dynamic</code>:</strong> يُستخدم لإنشاء عدة
+            <strong>كتل متداخلة</strong> (nested blocks) داخل مورد واحد.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>
+            سؤال 5: لماذا لا يمكن استخدام <code>[*]</code> مع موارد
+            <code>for_each</code>؟
+          </h4>
+          <p>
+            لأن <code>for_each</code> يُنشئ الموارد كـ
+            <strong>خريطة (map)</strong> وليس قائمة. الـ <code>[*]</code> يعمل
+            فقط مع القوائم. الحل: استخدام <code>values()</code> لتحويل الـ map
+            إلى قائمة أولاً.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 10: Quick Reference -->
+      <div class="section">
+        <h2>⚡ مرجع سريع</h2>
+
+        <div class="code-block">
+          <pre><span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Dynamic Blocks</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># الصيغة الأساسية</span>
+<span class="keyword">dynamic</span> <span class="string">"block_name"</span> {
+  <span class="argument">for_each</span> = <span class="variable">collection</span>
+
+  <span class="keyword">content</span> {
+    <span class="argument">attribute</span> = <span class="variable">block_name.value</span>
+  }
+}
+
+<span class="comment"># مع iterator (اختياري)</span>
+<span class="keyword">dynamic</span> <span class="string">"block_name"</span> {
+  <span class="argument">iterator</span> = <span class="variable">custom_name</span>
+  <span class="argument">for_each</span> = <span class="variable">collection</span>
+
+  <span class="keyword">content</span> {
+    <span class="argument">attribute</span> = <span class="variable">custom_name.value</span>
+  }
+}
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Splat Expressions</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># الصيغة</span>
+<span class="resource">resource.name.attribute</span>[<span class="splat">*</span>].<span class="attr">sub_attribute</span>
+
+<span class="comment"># أمثلة</span>
+<span class="resource">aws_instance.web</span>[<span class="splat">*</span>].<span class="attr">public_ip</span>      <span class="comment"># جميع الـ IPs</span>
+<span class="resource">aws_security_group.sg.ingress</span>[<span class="splat">*</span>].<span class="attr">to_port</span>  <span class="comment"># جميع المنافذ</span>
+
+<span class="comment"># مع for_each (تحويل إلى قائمة أولاً)</span>
+<span class="keyword">values</span>(<span class="resource">aws_instance.web</span>)[<span class="splat">*</span>].<span class="attr">id</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># مثال عملي كامل</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="keyword">variable</span> <span class="string">"ingress_ports"</span> {
+  <span class="argument">type</span>    = <span class="keyword">list</span>
+  <span class="argument">default</span> = [<span class="number">22</span>, <span class="number">8080</span>, <span class="number">443</span>]
+}
+
+<span class="keyword">resource</span> <span class="string">"aws_security_group"</span> <span class="string">"web-sg"</span> {
+  <span class="argument">name</span>   = <span class="string">"web-sg"</span>
+  <span class="argument">vpc_id</span> = <span class="resource">aws_vpc.main.id</span>
+
+  <span class="keyword">dynamic</span> <span class="string">"ingress"</span> {
+    <span class="argument">for_each</span> = <span class="variable">var.ingress_ports</span>
+    <span class="keyword">content</span> {
+      <span class="argument">from_port</span>   = <span class="variable">ingress.value</span>
+      <span class="argument">to_port</span>     = <span class="variable">ingress.value</span>
+      <span class="argument">protocol</span>    = <span class="string">"tcp"</span>
+      <span class="argument">cidr_blocks</span> = [<span class="string">"0.0.0.0/0"</span>]
+    }
+  }
+}
+
+<span class="keyword">output</span> <span class="string">"all_ports"</span> {
+  <span class="argument">value</span> = <span class="resource">aws_security_group.web-sg.ingress</span>[<span class="splat">*</span>].<span class="attr">to_port</span>
+}</pre>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="nav-links">
+        <a href="08-functions-conditional-expressions.html"
+          >→ السابق: الدوال والتعابير الشرطية</a
+        >
+        <a href="#">التالي: الـ Tainting والـ Import والـ Debugging ←</a>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p>
+          📚 <strong>المصدر الرئيسي:</strong>
+          <a
+            href="https://opentofu.org/docs/language/expressions/dynamic-blocks/"
+            target="_blank"
+            >Dynamic Blocks</a
+          >
+          |
+          <a
+            href="https://opentofu.org/docs/language/expressions/splat/"
+            target="_blank"
+            >Splat Expressions</a
+          >
+        </p>
+        <p style="margin-top: 10px">
+          🎓 <strong>الهدف:</strong> الحصول على شهادة DevOps ووظيفة في مجال الـ
+          Cloud
+        </p>
+        <p
+          style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light)"
+        >
+          تم الإنشاء بواسطة Teaching Workspace | المرجع رقم: 09
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

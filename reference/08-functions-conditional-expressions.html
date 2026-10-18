@@ -1,0 +1,857 @@
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenTofu - Functions, Operators & Conditional Expressions</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+      :root {
+          --string-color: #f38ba8;
+          --map-color: #fab387;
+      }
+      .concepts-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 15px;
+          margin: 20px 0;
+      }
+      .concept-card {
+          border-radius: 10px;
+          padding: 18px;
+          text-align: center;
+          border: 2px solid;
+          transition: transform 0.2s;
+      }
+      .concept-card h4 {
+          margin-bottom: 8px;
+          font-family: "Courier New", monospace;
+          font-size: 0.95rem;
+      }
+      .concept-card p {
+          font-size: 0.8rem;
+          color: var(--text-light);
+      }
+      @media (max-width: 768px) {
+          .concepts-grid {
+              grid-template-columns: repeat(2, 1fr);
+          }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>⚡ OpenTofu - Functions, Operators & Conditional Expressions</h1>
+        <p>مرجع شامل للدوال المدمجة، العوامل، والتعابير الشرطية</p>
+      </header>
+
+      <!-- Section 1: Overview -->
+      <div class="section">
+        <h2>📋 نظرة عامة (Overview)</h2>
+        <p style="margin-bottom: 20px; color: var(--text-light)">
+          OpenTofu يوفر عشرات الدوال المدمجة لتحويل ومعالجة القيم. يمكن اختبار
+          جميع الدوال والعوامل باستخدام <code>tofu console</code>.
+        </p>
+
+        <div class="concepts-grid">
+          <div class="concept-card numeric">
+            <h4>Numeric</h4>
+            <p>max, min, ceil, floor</p>
+          </div>
+          <div class="concept-card string">
+            <h4>String</h4>
+            <p>split, join, lower, upper</p>
+          </div>
+          <div class="concept-card collection">
+            <h4>Collection</h4>
+            <p>length, index, contains</p>
+          </div>
+          <div class="concept-card map">
+            <h4>Map</h4>
+            <p>keys, values, lookup</p>
+          </div>
+          <div class="concept-card operator">
+            <h4>Operators</h4>
+            <p>Arithmetic, Logic, Compare</p>
+          </div>
+        </div>
+
+        <div class="success-box">
+          <h4>✅ الـ Console التفاعلي</h4>
+          <p>
+            استخدم <code>tofu console</code> لاختبار جميع الدوال والعوامل قبل
+            استخدامها في الكود. هذا يوفر الوقت ويمنع الأخطاء!
+          </p>
+          <div class="console-box">
+            <pre><span class="prompt">$</span> <span class="input">tofu console</span>
+<span class="prompt">&gt;</span> <span class="input">length(var.region)</span>
+<span class="output">3</span>
+<span class="prompt">&gt;</span> <span class="input">toset(var.region)</span>
+<span class="output">toset([
+  "ca-central-1",
+  "us-east-1",
+])</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Numeric Functions -->
+      <div class="section">
+        <h2>🔢 الدوال العددية (Numeric Functions)</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          تُستخدم لتحويل ومعالجة الأرقام.
+        </p>
+
+        <table class="command-table">
+          <thead>
+            <tr>
+              <th>الدالة</th>
+              <th>الوظيفة</th>
+              <th>مثال</th>
+              <th>النتيجة</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>max()</code></td>
+              <td>أكبر رقم</td>
+              <td><code>max(-1, 2, -10, 200, -250)</code></td>
+              <td><code>200</code></td>
+            </tr>
+            <tr>
+              <td><code>min()</code></td>
+              <td>أصغر رقم</td>
+              <td><code>min(-1, 2, -10, 200, -250)</code></td>
+              <td><code>-250</code></td>
+            </tr>
+            <tr>
+              <td><code>ceil()</code></td>
+              <td>أقرب عدد صحيح أكبر</td>
+              <td><code>ceil(10.1)</code></td>
+              <td><code>11</code></td>
+            </tr>
+            <tr>
+              <td><code>floor()</code></td>
+              <td>أقرب عدد صحيح أصغر</td>
+              <td><code>floor(10.9)</code></td>
+              <td><code>10</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>📄 استخدام المتغيرات مع الدوال</h3>
+        <div class="code-block">
+          <pre><span class="comment"># variables.tf</span>
+<span class="keyword">variable</span> <span class="string">"num"</span> {
+  <span class="argument">type</span>    = <span class="keyword">set</span>(<span class="keyword">number</span>)
+  <span class="argument">default</span> = [ <span class="number">250</span>, <span class="number">10</span>, <span class="number">11</span>, <span class="number">5</span> ]
+}
+
+<span class="comment"># في الـ console</span>
+<span class="prompt">&gt;</span> <span class="function">max</span>(<span class="variable">var.num...</span>)  <span class="comment"># ← معامل التوسعة</span>
+<span class="output">250</span></pre>
+        </div>
+
+        <div class="tip-box">
+          <h4>💡 معامل التوسعة <code>...</code></h4>
+          <p>
+            عند تمرير متغير من نوع <code>set</code> أو <code>list</code> إلى
+            دالة تتوقع عدة معاملات، استخدم <code>...</code> لتوسيع العناصر إلى
+            معاملات منفصلة.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 3: String Functions -->
+      <div class="section">
+        <h2>📝 دوال النصوص (String Functions)</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          تُستخدم لتحويل ومعالجة النصوص.
+        </p>
+
+        <h3>📄 مثال: متغير يحتوي على نص</h3>
+        <div class="code-block">
+          <pre><span class="keyword">variable</span> <span class="string">"ami"</span> {
+  <span class="argument">type</span>    = <span class="keyword">string</span>
+  <span class="argument">default</span> = <span class="string">"ami-xyz,AMI-ABC,ami-efg"</span>
+}</pre>
+        </div>
+
+        <table class="command-table">
+          <thead>
+            <tr>
+              <th>الدالة</th>
+              <th>الوظيفة</th>
+              <th>مثال</th>
+              <th>النتيجة</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>split()</code></td>
+              <td>تقسيم نص إلى قائمة</td>
+              <td><code>split(",", var.ami)</code></td>
+              <td><code>["ami-xyz", "AMI-ABC", "ami-efg"]</code></td>
+            </tr>
+            <tr>
+              <td><code>join()</code></td>
+              <td>دمج قائمة إلى نص</td>
+              <td><code>join(",", [...])</code></td>
+              <td><code>"ami-xyz,AMI-ABC,ami-efg"</code></td>
+            </tr>
+            <tr>
+              <td><code>lower()</code></td>
+              <td>تحويل إلى أحرف صغيرة</td>
+              <td><code>lower(var.ami)</code></td>
+              <td><code>"ami-xyz,ami-abc,ami-efg"</code></td>
+            </tr>
+            <tr>
+              <td><code>upper()</code></td>
+              <td>تحويل إلى أحرف كبيرة</td>
+              <td><code>upper(var.ami)</code></td>
+              <td><code>"AMI-XYZ,AMI-ABC,AMI-EFG"</code></td>
+            </tr>
+            <tr>
+              <td><code>title()</code></td>
+              <td>أول حرف كبير في كل كلمة</td>
+              <td><code>title(var.ami)</code></td>
+              <td><code>"Ami-Xyz,AMI-ABC,Ami-Efg"</code></td>
+            </tr>
+            <tr>
+              <td><code>substr()</code></td>
+              <td>استخراج جزء من النص</td>
+              <td><code>substr(var.ami, 0, 7)</code></td>
+              <td><code>"ami-xyz"</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>📄 شرح مفصل لـ <code>substr()</code></h3>
+        <div class="code-block">
+          <pre><span class="comment"># الصيغة: substr(string, offset, length)</span>
+
+<span class="comment"># offset = من أين نبدأ (يبدأ من 0)</span>
+<span class="comment"># length = عدد الأحرف</span>
+
+<span class="prompt">&gt;</span> <span class="function">substr</span>(<span class="variable">var.ami</span>, <span class="number">0</span>, <span class="number">7</span>)   <span class="comment"># ← أول 7 أحرف</span>
+<span class="output">"ami-xyz"</span>
+
+<span class="prompt">&gt;</span> <span class="function">substr</span>(<span class="variable">var.ami</span>, <span class="number">8</span>, <span class="number">7</span>)   <span class="comment"># ← من الحرف 8، 7 أحرف</span>
+<span class="output">"AMI-ABC"</span>
+
+<span class="prompt">&gt;</span> <span class="function">substr</span>(<span class="variable">var.ami</span>, <span class="number">16</span>, <span class="number">7</span>)  <span class="comment"># ← من الحرف 16، 7 أحرف</span>
+<span class="output">"ami-efg"</span></pre>
+        </div>
+
+        <div class="tip-box">
+          <h4>💡 مثال عملي: إنشاء مستخدمين من نص</h4>
+          <div class="code-block">
+            <pre><span class="comment"># variables.tf</span>
+<span class="keyword">variable</span> <span class="string">"cloud_users"</span> {
+  <span class="argument">type</span>    = <span class="keyword">string</span>
+  <span class="argument">default</span> = <span class="string">"andrew:ken:faraz:mutsumi:peter:steve:braja"</span>
+}
+
+<span class="comment"># main.tf</span>
+<span class="keyword">resource</span> <span class="string">"aws_iam_user"</span> <span class="string">"cloud"</span> {
+  <span class="argument">name</span>  = <span class="function">split</span>(<span class="string">":"</span>, <span class="variable">var.cloud_users</span>)[<span class="variable">count.index</span>]
+  <span class="argument">count</span> = <span class="function">length</span>(<span class="function">split</span>(<span class="string">":"</span>, <span class="variable">var.cloud_users</span>))
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Collection Functions -->
+      <div class="section">
+        <h2>📚 دوال المجموعات (Collection Functions)</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          تُستخدم مع أنواع المجموعات مثل <code>list</code> و <code>set</code>.
+        </p>
+
+        <table class="command-table">
+          <thead>
+            <tr>
+              <th>الدالة</th>
+              <th>الوظيفة</th>
+              <th>مثال</th>
+              <th>النتيجة</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>length()</code></td>
+              <td>عدد العناصر</td>
+              <td><code>length(var.ami)</code></td>
+              <td><code>3</code></td>
+            </tr>
+            <tr>
+              <td><code>index()</code></td>
+              <td>موقع عنصر</td>
+              <td><code>index(var.ami, "AMI-ABC")</code></td>
+              <td><code>1</code></td>
+            </tr>
+            <tr>
+              <td><code>element()</code></td>
+              <td>عنصر في موقع معين</td>
+              <td><code>element(var.ami, 2)</code></td>
+              <td><code>"ami-efg"</code></td>
+            </tr>
+            <tr>
+              <td><code>contains()</code></td>
+              <td>هل يوجد العنصر؟</td>
+              <td><code>contains(var.ami, "AMI-ABC")</code></td>
+              <td><code>true</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="warning-box">
+          <h4>⚠️ دالة <code>contains()</code> حساسة لحالة الأحرف!</h4>
+          <div class="code-block">
+            <pre><span class="prompt">&gt;</span> <span class="function">contains</span>(<span class="variable">var.ami</span>, <span class="string">"AMI-ABC"</span>)  <span class="comment"># ← موجود</span>
+<span class="output">true</span>
+
+<span class="prompt">&gt;</span> <span class="function">contains</span>(<span class="variable">var.ami</span>, <span class="string">"AMI-XYZ"</span>)  <span class="comment"># ← غير موجود (بسبب الحالة)</span>
+<span class="output">false</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 5: Map Functions -->
+      <div class="section">
+        <h2>🗺️ دوال الخرائط (Map Functions)</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          تُستخدم مع نوع <code>map</code>.
+        </p>
+
+        <h3>📄 مثال: خريطة المناطق</h3>
+        <div class="code-block">
+          <pre><span class="keyword">variable</span> <span class="string">"ami"</span> {
+  <span class="argument">type</span> = <span class="keyword">map</span>
+  <span class="argument">default</span> = {
+    <span class="string">"us-east-1"</span>    = <span class="string">"ami-xyz"</span>
+    <span class="string">"ca-central-1"</span> = <span class="string">"ami-efg"</span>
+    <span class="string">"ap-south-1"</span>   = <span class="string">"ami-ABC"</span>
+  }
+}</pre>
+        </div>
+
+        <table class="command-table">
+          <thead>
+            <tr>
+              <th>الدالة</th>
+              <th>الوظيفة</th>
+              <th>مثال</th>
+              <th>النتيجة</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>keys()</code></td>
+              <td>قائمة المفاتيح</td>
+              <td><code>keys(var.ami)</code></td>
+              <td><code>["ap-south-1", "ca-central-1", "us-east-1"]</code></td>
+            </tr>
+            <tr>
+              <td><code>values()</code></td>
+              <td>قائمة القيم</td>
+              <td><code>values(var.ami)</code></td>
+              <td><code>["ami-ABC", "ami-efg", "ami-xyz"]</code></td>
+            </tr>
+            <tr>
+              <td><code>lookup()</code></td>
+              <td>قيمة مفتاح معين</td>
+              <td><code>lookup(var.ami, "ca-central-1")</code></td>
+              <td><code>"ami-efg"</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>📄 دالة <code>lookup()</code> مع القيمة الافتراضية</h3>
+        <div class="code-block">
+          <pre><span class="comment"># الصيغة: lookup(map, key, default)</span>
+
+<span class="comment"># مفتاح موجود</span>
+<span class="prompt">&gt;</span> <span class="function">lookup</span>(<span class="variable">var.ami</span>, <span class="string">"ca-central-1"</span>)
+<span class="output">"ami-efg"</span>
+
+<span class="comment"># مفتاح غير موجود ← خطأ بدون قيمة افتراضية</span>
+<span class="prompt">&gt;</span> <span class="function">lookup</span>(<span class="variable">var.ami</span>, <span class="string">"us-west-2"</span>)
+<span class="flag">Error: lookup failed to find key 'us-west-2'</span>
+
+<span class="comment"># مفتاح غير موجود مع قيمة افتراضية ← يرجع القيمة الافتراضية</span>
+<span class="prompt">&gt;</span> <span class="function">lookup</span>(<span class="variable">var.ami</span>, <span class="string">"us-west-2"</span>, <span class="string">"ami-pqr"</span>)
+<span class="output">"ami-pqr"</span></pre>
+        </div>
+
+        <div class="tip-box">
+          <h4>💡 مثال عملي: اختيار حسب الـ Workspace</h4>
+          <div class="code-block">
+            <pre><span class="comment"># main.tf</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"webserver"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="function">lookup</span>(<span class="variable">var.instance_type</span>, <span class="keyword">terraform.workspace</span>)
+  <span class="comment">#                                        ↑                    ↑</span>
+  <span class="comment">#                                        الخريطة           الـ workspace الحالي</span>
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 6: Operators -->
+      <div class="section">
+        <h2>⚙️ العوامل (Operators)</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          يمكن اختبار جميع العوامل في الـ <code>tofu console</code>.
+        </p>
+
+        <h3>1️⃣ العوامل الحسابية (Arithmetic Operators)</h3>
+        <div class="console-box">
+          <pre><span class="prompt">&gt;</span> <span class="input">8 + 8</span>     <span class="comment"># جمع</span>
+<span class="output">16</span>
+<span class="prompt">&gt;</span> <span class="input">8 - 8</span>     <span class="comment"># طرح</span>
+<span class="output">0</span>
+<span class="prompt">&gt;</span> <span class="input">2 * 2</span>     <span class="comment"># ضرب</span>
+<span class="output">4</span>
+<span class="prompt">&gt;</span> <span class="input">8 / 2</span>     <span class="comment"># قسمة</span>
+<span class="output">4</span></pre>
+        </div>
+
+        <h3>2️⃣ عوامل المساواة (Equality Operators)</h3>
+        <div class="console-box">
+          <pre><span class="prompt">&gt;</span> <span class="input">8 == 8</span>     <span class="comment"># يساوي تماماً</span>
+<span class="output">true</span>
+<span class="prompt">&gt;</span> <span class="input">8 != 7</span>     <span class="comment"># لا يساوي</span>
+<span class="output">true</span>
+<span class="prompt">&gt;</span> <span class="input">8 != "8"</span>   <span class="comment"># رقم ≠ نص (مهما كان المحتوى)</span>
+<span class="output">true</span></pre>
+        </div>
+
+        <h3>3️⃣ عوامل المقارنة (Comparison Operators)</h3>
+        <div class="console-box">
+          <pre><span class="prompt">&gt;</span> <span class="input">8 &gt; 9</span>      <span class="comment"># أكبر من</span>
+<span class="output">false</span>
+<span class="prompt">&gt;</span> <span class="input">8 &gt; 7</span>      <span class="comment"># أكبر من</span>
+<span class="output">true</span>
+<span class="prompt">&gt;</span> <span class="input">8 &gt; 8</span>      <span class="comment"># أكبر تماماً من (يساوي لا يُحتسب)</span>
+<span class="output">false</span>
+<span class="prompt">&gt;</span> <span class="input">8 &gt;= 8</span>     <span class="comment"># أكبر أو يساوي</span>
+<span class="output">true</span>
+<span class="prompt">&gt;</span> <span class="input">4 &lt; 5</span>      <span class="comment"># أصغر من</span>
+<span class="output">true</span>
+<span class="prompt">&gt;</span> <span class="input">3 &lt;= 4</span>     <span class="comment"># أصغر أو يساوي</span>
+<span class="output">true</span></pre>
+        </div>
+
+        <h3>4️⃣ العوامل المنطقية (Logical Operators)</h3>
+        <div class="console-box">
+          <pre><span class="comment"># AND: يرجع true فقط إذا كانت كلتا القيمتين true</span>
+<span class="prompt">&gt;</span> <span class="input">8 &gt; 7 && 8 &lt; 10</span>
+<span class="output">true</span>
+<span class="prompt">&gt;</span> <span class="input">8 &gt; 10 && 8 &lt; 10</span>
+<span class="output">false</span>
+
+<span class="comment"># OR: يرجع true إذا كانت إحدى القيمتين true</span>
+<span class="prompt">&gt;</span> <span class="input">8 &gt; 10 || 8 &lt; 10</span>
+<span class="output">true</span>
+
+<span class="comment"># NOT: يعكس القيمة المنطقية</span>
+<span class="prompt">&gt;</span> <span class="input">var.special</span>       <span class="comment"># true</span>
+<span class="output">true</span>
+<span class="prompt">&gt;</span> <span class="input">! var.special</span>     <span class="comment"># يعكس إلى false</span>
+<span class="output">false</span>
+<span class="prompt">&gt;</span> <span class="input">! (var.b &gt; 30)</span>    <span class="comment"># 25 ليس أكبر من 30، فيرجع true</span>
+<span class="output">true</span></pre>
+        </div>
+
+        <h3>📄 استخدام العوامل مع المتغيرات</h3>
+        <div class="code-block">
+          <pre><span class="comment"># variables.tf</span>
+<span class="keyword">variable</span> <span class="string">"a"</span> {
+  <span class="argument">type</span>    = <span class="keyword">number</span>
+  <span class="argument">default</span> = <span class="number">50</span>
+}
+
+<span class="keyword">variable</span> <span class="string">"b"</span> {
+  <span class="argument">type</span>    = <span class="keyword">number</span>
+  <span class="argument">default</span> = <span class="number">25</span>
+}
+
+<span class="comment"># في الـ console</span>
+<span class="prompt">&gt;</span> <span class="variable">var.a</span> &gt; <span class="variable">var.b</span>
+<span class="output">true</span>
+<span class="prompt">&gt;</span> <span class="variable">var.a</span> &lt; <span class="variable">var.b</span>
+<span class="output">false</span>
+<span class="prompt">&gt;</span> <span class="variable">var.a</span> + <span class="variable">var.b</span>
+<span class="output">75</span></pre>
+        </div>
+      </div>
+
+      <!-- Section 7: Conditional Expressions -->
+      <div class="section">
+        <h2>🔀 التعابير الشرطية (Conditional Expressions)</h2>
+        <p style="margin-bottom: 15px; color: var(--text-light)">
+          تُستخدم لاختيار قيمة بناءً على شرط. تشبه <code>if-else</code> في لغات
+          البرمجة.
+        </p>
+
+        <div class="conditional-formula">
+          <div class="formula">condition ? true_value : false_value</div>
+          <div class="explanation">
+            إذا كان الشرط <strong>true</strong> ← تُستخدم القيمة بعد
+            <code>?</code><br />
+            إذا كان الشرط <strong>false</strong> ← تُستخدم القيمة بعد
+            <code>:</code>
+          </div>
+        </div>
+
+        <h3>📄 مثال عملي: كلمة مرور بطول أدنى</h3>
+        <div class="code-block">
+          <pre><span class="comment"># variables.tf</span>
+<span class="keyword">variable</span> <span class="string">"length"</span> {
+  <span class="argument">type</span>        = <span class="keyword">number</span>
+  <span class="argument">description</span> = <span class="string">"طول كلمة المرور"</span>
+}
+
+<span class="comment"># main.tf</span>
+<span class="keyword">resource</span> <span class="string">"random_password"</span> <span class="string">"password-generator"</span> {
+  <span class="comment"># ← التعبير الشرطي</span>
+  <span class="argument">length</span> = <span class="variable">var.length</span> &lt; <span class="number">8</span> ? <span class="number">8</span> : <span class="variable">var.length</span>
+  <span class="comment">#                    ↑       ↑       ↑</span>
+  <span class="comment">#                    الشرط   إذا كان صحيحاً   إذا كان خاطئاً</span>
+}
+
+<span class="keyword">output</span> <span class="string">"password"</span> {
+  <span class="argument">value</span>     = <span class="resource">random_password.password-generator.result</span>
+  <span class="argument">sensitive</span> = <span class="bool">true</span>
+}</pre>
+        </div>
+
+        <h3>🔍 شرح التعبير الشرطي</h3>
+        <div class="flow-diagram">
+          <div class="flow-box" style="border-color: #89b4fa">
+            <h5 style="color: #2563eb">var.length &lt; 8 ?</h5>
+            <p>الشرط: هل الطول أقل من 8؟</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div
+            class="flow-box"
+            style="
+              border-color: #22c55e;
+              background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            "
+          >
+            <h5 style="color: #16a34a">إذا كان true</h5>
+            <p>استخدم 8</p>
+          </div>
+          <div class="flow-arrow">أو</div>
+          <div
+            class="flow-box"
+            style="
+              border-color: #fab387;
+              background: linear-gradient(135deg, #fff7ed, #ffedd5);
+            "
+          >
+            <h5 style="color: #ea580c">إذا كان false</h5>
+            <p>استخدم var.length</p>
+          </div>
+        </div>
+
+        <h3>🔧 اختبار النتيجة</h3>
+        <div class="code-block">
+          <pre><span class="comment"># طول 5 ← سيتم استخدام 8</span>
+<span class="keyword">tofu apply</span> <span class="flag">-var=length=5</span>
+<span class="output"># length = 8</span>
+
+<span class="comment"># طول 12 ← سيتم استخدام 12</span>
+<span class="keyword">tofu apply</span> <span class="flag">-var=length=12</span>
+<span class="output"># length = 12</span></pre>
+        </div>
+
+        <h3>📄 مثال آخر: اختيار نوع الماكينة حسب الـ tag</h3>
+        <div class="code-block">
+          <pre><span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"mario_servers"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.name</span> == <span class="string">"tiny"</span> ? <span class="variable">var.small</span> : <span class="variable">var.large</span>
+  <span class="comment">#                        ↑              ↑              ↑</span>
+  <span class="comment">#                        الشرط         إذا true       إذا false</span>
+
+  <span class="argument">tags</span> = {
+    <span class="argument">Name</span> = <span class="variable">var.name</span>
+  }
+}</pre>
+        </div>
+      </div>
+
+      <!-- Section 8: Practical Examples -->
+      <div class="section">
+        <h2>🎯 أمثلة عملية من الملف</h2>
+
+        <h3>📄 مثال 1: رفع ملفات إلى S3 مع <code>substr()</code></h3>
+        <div class="code-block">
+          <pre><span class="keyword">variable</span> <span class="string">"media"</span> {
+  <span class="argument">type</span> = <span class="keyword">set</span>(<span class="keyword">string</span>)
+  <span class="argument">default</span> = [
+    <span class="string">"/media/tails.jpg"</span>,
+    <span class="string">"/media/eggman.jpg"</span>,
+    <span class="string">"/media/ultrasonic.jpg"</span>,
+    <span class="string">"/media/knuckles.jpg"</span>,
+    <span class="string">"/media/shadow.jpg"</span>,
+  ]
+}
+
+<span class="keyword">resource</span> <span class="string">"aws_s3_object"</span> <span class="string">"upload_sonic-media"</span> {
+  <span class="argument">bucket</span>   = <span class="resource">aws_s3_bucket.sonic_media.id</span>
+  <span class="argument">key</span>      = <span class="function">substr</span>(<span class="variable">each.value</span>, <span class="number">7</span>, <span class="number">20</span>)  <span class="comment"># ← إزالة "/media/"</span>
+  <span class="argument">source</span>   = <span class="variable">each.value</span>
+  <span class="argument">for_each</span> = <span class="variable">var.media</span>
+}
+
+<span class="comment"># النتيجة: "tails.jpg", "eggman.jpg", إلخ (بدون /media/)</span></pre>
+        </div>
+
+        <h3>📄 مثال 2: استخدام <code>title()</code> مع الملفات</h3>
+        <div class="code-block">
+          <pre><span class="comment"># في الـ console</span>
+<span class="prompt">&gt;</span> <span class="function">title</span>(<span class="string">"user-generated password file"</span>)
+<span class="output">"User-Generated Password File"</span></pre>
+        </div>
+
+        <h3>📄 مثال 3: <code>floor()</code> و <code>ceil()</code></h3>
+        <div class="code-block">
+          <pre><span class="prompt">&gt;</span> <span class="function">floor</span>(<span class="number">10.9</span>)  <span class="comment"># ← أقرب عدد صحيح أصغر</span>
+<span class="output">10</span>
+
+<span class="prompt">&gt;</span> <span class="function">ceil</span>(<span class="number">10.1</span>)   <span class="comment"># ← أقرب عدد صحيح أكبر</span>
+<span class="output">11</span>
+
+<span class="prompt">&gt;</span> <span class="function">ceil</span>(<span class="number">10.9</span>)   <span class="comment"># ← نفس النتيجة</span>
+<span class="output">11</span></pre>
+        </div>
+      </div>
+
+      <!-- Section 9: Common Mistakes -->
+      <div class="section">
+        <h2>⚠️ أخطاء شائعة يجب تجنبها</h2>
+
+        <div class="warning-box">
+          <h4>❌ خطأ 1: نسيان معامل التوسعة <code>...</code></h4>
+          <div class="code-block">
+            <pre><span class="comment"># ❌ خطأ - لا يمكن تمرير set مباشرة إلى دالة تتوقع عدة معاملات</span>
+<span class="function">max</span>(<span class="variable">var.num</span>)
+
+<span class="comment"># ✅ صحيح - استخدام معامل التوسعة</span>
+<span class="function">max</span>(<span class="variable">var.num...</span>)</pre>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <h4>❌ خطأ 2: مقارنة رقم بنص</h4>
+          <div class="code-block">
+            <pre><span class="comment"># ❌ خطأ - 8 و "8" ليسا متساويين!</span>
+<span class="number">8</span> == <span class="string">"8"</span>  <span class="comment"># يرجع false</span>
+
+<span class="comment"># ✅ صحيح - نفس النوع</span>
+<span class="number">8</span> == <span class="number">8</span>      <span class="comment"># يرجع true</span>
+<span class="string">"8"</span> == <span class="string">"8"</span>  <span class="comment"># يرجع true</span></pre>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <h4>❌ خطأ 3: <code>contains()</code> حساسة للحالة</h4>
+          <p>
+            دالة <code>contains()</code> تميز بين الأحرف الكبيرة والصغيرة. إذا
+            كنت تبحث عن عنصر، تأكد من الحالة الصحيحة.
+          </p>
+        </div>
+
+        <div class="warning-box">
+          <h4>❌ خطأ 4: <code>lookup()</code> بدون قيمة افتراضية</h4>
+          <p>إذا كان المفتاح غير موجود، سيرجع خطأ. أضف دائماً قيمة افتراضية:</p>
+          <div class="code-block">
+            <pre><span class="comment"># ❌ خطر - قد يرجع خطأ</span>
+<span class="function">lookup</span>(<span class="variable">var.map</span>, <span class="string">"key"</span>)
+
+<span class="comment"># ✅ آمن - مع قيمة افتراضية</span>
+<span class="function">lookup</span>(<span class="variable">var.map</span>, <span class="string">"key"</span>, <span class="string">"default_value"</span>)</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 10: Interview Questions -->
+      <div class="section">
+        <h2>🎤 أسئلة مقابلات مهمة</h2>
+
+        <div class="interview-box">
+          <h4>
+            سؤال 1: ما الفرق بين <code>split()</code> و <code>join()</code>؟
+          </h4>
+          <p>
+            <strong><code>split()</code>:</strong> يحول نص إلى قائمة باستخدام
+            فاصل معين.<br />
+            <strong><code>join()</code>:</strong> يحول قائمة إلى نص بدمج العناصر
+            مع فاصل معين.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>
+            سؤال 2: كيف تستخدم دالة <code>lookup()</code> مع قيمة افتراضية؟
+          </h4>
+          <p>
+            <code>lookup(map, key, default)</code><br />
+            إذا كان المفتاح غير موجود، تُرجع القيمة الافتراضية بدلاً من خطأ.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>سؤال 3: ما هي صيغة التعبير الشرطي؟</h4>
+          <p>
+            <code>condition ? true_value : false_value</code><br />
+            إذا كان الشرط true، تُستخدم القيمة بعد <code>?</code>. وإلا تُستخدم
+            القيمة بعد <code>:</code>.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>سؤال 4: لماذا <code>8 != "8"</code> يرجع <code>true</code>؟</h4>
+          <p>
+            لأن OpenTofu يقارن الأنواع أيضاً، ليس فقط القيم.
+            <code>8</code> رقم و <code>"8"</code> نص، لذلك هما ليسا متساويين.
+          </p>
+        </div>
+
+        <div class="interview-box">
+          <h4>
+            سؤال 5: ما الفرق بين <code>ceil()</code> و <code>floor()</code>؟
+          </h4>
+          <p>
+            <strong><code>ceil()</code>:</strong> أقرب عدد صحيح
+            <strong>أكبر</strong> أو يساوي.<br />
+            <strong><code>floor()</code>:</strong> أقرب عدد صحيح
+            <strong>أصغر</strong> أو يساوي.<br />
+            مثال: <code>ceil(10.1) = 11</code>، <code>floor(10.9) = 10</code>
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 11: Quick Reference -->
+      <div class="section">
+        <h2>⚡ مرجع سريع</h2>
+
+        <div class="code-block">
+          <pre><span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Numeric Functions</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="function">max</span>(<span class="number">1</span>, <span class="number">5</span>, <span class="number">3</span>)       <span class="comment"># → 5</span>
+<span class="function">min</span>(<span class="number">1</span>, <span class="number">5</span>, <span class="number">3</span>)       <span class="comment"># → 1</span>
+<span class="function">ceil</span>(<span class="number">10.1</span>)         <span class="comment"># → 11</span>
+<span class="function">floor</span>(<span class="number">10.9</span>)        <span class="comment"># → 10</span>
+<span class="function">max</span>(<span class="variable">var.set...</span>)   <span class="comment"># ← معامل التوسعة</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># String Functions</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="function">split</span>(<span class="string">","</span>, <span class="string">"a,b,c"</span>)    <span class="comment"># → ["a", "b", "c"]</span>
+<span class="function">join</span>(<span class="string">","</span>, [<span class="string">"a"</span>, <span class="string">"b"</span>])  <span class="comment"># → "a,b"</span>
+<span class="function">lower</span>(<span class="string">"ABC"</span>)           <span class="comment"># → "abc"</span>
+<span class="function">upper</span>(<span class="string">"abc"</span>)           <span class="comment"># → "ABC"</span>
+<span class="function">title</span>(<span class="string">"hello world"</span>)   <span class="comment"># → "Hello World"</span>
+<span class="function">substr</span>(<span class="string">"hello"</span>, <span class="number">0</span>, <span class="number">3</span>)  <span class="comment"># → "hel"</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Collection Functions</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="function">length</span>([<span class="string">"a"</span>, <span class="string">"b"</span>])           <span class="comment"># → 2</span>
+<span class="function">index</span>([<span class="string">"a"</span>, <span class="string">"b"</span>], <span class="string">"b"</span>)      <span class="comment"># → 1</span>
+<span class="function">element</span>([<span class="string">"a"</span>, <span class="string">"b"</span>], <span class="number">1</span>)      <span class="comment"># → "b"</span>
+<span class="function">contains</span>([<span class="string">"a"</span>, <span class="string">"b"</span>], <span class="string">"a"</span>)   <span class="comment"># → true</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Map Functions</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="function">keys</span>(<span class="variable">var.map</span>)                     <span class="comment"># → قائمة المفاتيح</span>
+<span class="function">values</span>(<span class="variable">var.map</span>)                   <span class="comment"># → قائمة القيم</span>
+<span class="function">lookup</span>(<span class="variable">var.map</span>, <span class="string">"key"</span>)             <span class="comment"># → القيمة أو خطأ</span>
+<span class="function">lookup</span>(<span class="variable">var.map</span>, <span class="string">"key"</span>, <span class="string">"default"</span>)  <span class="comment"># → القيمة أو الافتراضية</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Operators</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># Arithmetic</span>
+<span class="number">8</span> + <span class="number">8</span>  <span class="comment"># 16    </span> <span class="number">8</span> - <span class="number">8</span>  <span class="comment"># 0</span>
+<span class="number">2</span> * <span class="number">2</span>  <span class="comment"># 4     </span> <span class="number">8</span> / <span class="number">2</span>  <span class="comment"># 4</span>
+
+<span class="comment"># Equality</span>
+<span class="number">8</span> == <span class="number">8</span>   <span class="comment"># true   </span> <span class="number">8</span> != <span class="number">7</span>  <span class="comment"># true</span>
+
+<span class="comment"># Comparison</span>
+<span class="number">8</span> &gt; <span class="number">7</span>    <span class="comment"># true   </span> <span class="number">8</span> &gt;= <span class="number">8</span>  <span class="comment"># true</span>
+<span class="number">4</span> &lt; <span class="number">5</span>    <span class="comment"># true   </span> <span class="number">3</span> &lt;= <span class="number">4</span>  <span class="comment"># true</span>
+
+<span class="comment"># Logical</span>
+<span class="bool">true</span> && <span class="bool">true</span>   <span class="comment"># true  (AND)</span>
+<span class="bool">false</span> || <span class="bool">true</span>  <span class="comment"># true  (OR)</span>
+! <span class="bool">true</span>          <span class="comment"># false (NOT)</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Conditional Expression</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="variable">condition</span> ? <span class="string">"true_value"</span> : <span class="string">"false_value"</span>
+
+<span class="comment"># مثال عملي</span>
+<span class="variable">var.length</span> &lt; <span class="number">8</span> ? <span class="number">8</span> : <span class="variable">var.length</span>
+<span class="comment">#            ↑       ↑       ↑</span>
+<span class="comment">#            الشرط   إذا true إذا false</span></pre>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="nav-links">
+        <a href="07-provisioners-workspaces.html"
+          >→ السابق: الـ Provisioners والـ Workspaces</a
+        >
+        <a href="#">التالي: الـ Dynamic Blocks والـ Splat Expressions ←</a>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p>
+          📚 <strong>المصدر الرئيسي:</strong>
+          <a
+            href="https://opentofu.org/docs/language/functions/"
+            target="_blank"
+            >OpenTofu Functions</a
+          >
+          |
+          <a
+            href="https://opentofu.org/docs/language/expressions/operators/"
+            target="_blank"
+            >Operators</a
+          >
+          |
+          <a
+            href="https://opentofu.org/docs/language/expressions/conditionals/"
+            target="_blank"
+            >Conditionals</a
+          >
+        </p>
+        <p style="margin-top: 10px">
+          🎓 <strong>الهدف:</strong> الحصول على شهادة DevOps ووظيفة في مجال الـ
+          Cloud
+        </p>
+        <p
+          style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light)"
+        >
+          تم الإنشاء بواسطة Teaching Workspace | المرجع رقم: 08
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,588 @@
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenTofu - Data Sources, Count & For_Each</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .flow-box {
+            background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            padding: 15px 20px;
+            text-align: center;
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 OpenTofu - Data Sources, Count & For_Each</h1>
+            <p>مرجع شامل لمصادر البيانات والوسائط الوصفية لإنشاء موارد متعددة</p>
+        </header>
+
+        <!-- Section 1: Overview -->
+        <div class="section">
+            <h2>📋 نظرة عامة (Overview)</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">
+                مصادر البيانات (Data Sources) تتيح لك قراءة معلومات من موارد موجودة مسبقاً. الوسائط الوصفية <code>count</code> و <code>for_each</code> تتيح لك إنشاء عدة موارد من نفس الـ resource block.
+            </p>
+
+            <div class="concepts-grid">
+                <div class="concept-card data">
+                    <h4>Data Sources</h4>
+                    <p>قراءة معلومات من موارد موجودة</p>
+                </div>
+                <div class="concept-card count">
+                    <h4>count</h4>
+                    <p>إنشاء موارد متعددة كقائمة (list)</p>
+                </div>
+                <div class="concept-card foreach">
+                    <h4>for_each</h4>
+                    <p>إنشاء موارد متعددة كخريطة (map)</p>
+                </div>
+                <div class="concept-card compare">
+                    <h4>Metric</h4>
+                    <p>متى تستخدم كل منهما</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Data Sources -->
+        <div class="section">
+            <h2>📖 مصادر البيانات (Data Sources)</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                تُستخدم لقراءة معلومات من موارد موجودة مسبقاً (لم تُنشأ بواسطة هذا الـ Configuration).
+            </p>
+
+            <h3>📄 الصيغة العامة</h3>
+            <div class="code-block">
+                <pre><span class="keyword">data</span> <span class="string">"&lt;data_type&gt;"</span> <span class="string">"&lt;data_name&gt;"</span> {
+  <span class="comment"># arguments لتحديد المورد</span>
+}</pre>
+            </div>
+
+            <h3>📄 مثال: قراءة Key Pair موجود</h3>
+            <div class="code-block">
+                <pre><span class="comment"># data block لقراءة مفتاح موجود</span>
+<span class="keyword">data</span> <span class="string">"aws_key_pair"</span> <span class="string">"cerberus-key"</span> {
+  <span class="argument">key_name</span> = <span class="string">"alpha"</span>
+}
+
+<span class="comment"># استخدام الـ data في مورد جديد</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"cerberus"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.instance_type</span>
+  <span class="argument">key_name</span>      = <span class="data">data.aws_key_pair.cerberus-key.key_name</span>  <span class="comment"># ← Reference</span>
+}</pre>
+            </div>
+
+            <h3>📄 مثال: استخدام الفلاتر (Filters)</h3>
+            <div class="code-block">
+                <pre><span class="comment"># البحث عن مفتاح عبر الـ tags</span>
+<span class="keyword">data</span> <span class="string">"aws_key_pair"</span> <span class="string">"cerberus-key"</span> {
+  <span class="keyword">filter</span> {
+    <span class="argument">name</span>   = <span class="string">"tag:project"</span>
+    <span class="argument">values</span> = [<span class="string">"cerberus"</span>]
+  }
+}</pre>
+            </div>
+
+            <h3>📄 مثال: قراءة ملف محلي</h3>
+            <div class="code-block">
+                <pre><span class="comment"># قراءة ملف موجود</span>
+<span class="keyword">data</span> <span class="string">"local_file"</span> <span class="string">"os"</span> {
+  <span class="argument">filename</span> = <span class="string">"/etc/os-release"</span>
+}
+
+<span class="comment"># عرض المحتوى عبر output</span>
+<span class="keyword">output</span> <span class="string">"os_version"</span> {
+  <span class="argument">value</span> = <span class="data">data.local_file.os.content</span>
+}</pre>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ صيغة الـ Reference للـ Data Source</h4>
+                <div class="code-block">
+                    <pre><span class="comment"># الصيغة العامة</span>
+<span class="data">data</span>.<span class="resource">data_type</span>.<span class="resource">data_name</span>.<span class="attr">attribute</span>
+
+<span class="comment"># مثال عملي</span>
+<span class="data">data</span>.<span class="resource">aws_key_pair</span>.<span class="resource">cerberus-key</span>.<span class="attr">key_name</span></pre>
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <h4>💡 الفرق بين Resource و Data Source</h4>
+                <table class="command-table">
+                    <thead>
+                        <tr>
+                            <th>المعيار</th>
+                            <th>Resource</th>
+                            <th>Data Source</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>الكلمة المفتاحية</strong></td>
+                            <td><code>resource</code></td>
+                            <td><code>data</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>الوظيفة</strong></td>
+                            <td>إنشاء، تعديل، حذف</td>
+                            <td>قراءة فقط</td>
+                        </tr>
+                        <tr>
+                            <td><strong>الإدارة</strong></td>
+                            <td>مُدار بواسطة OpenTofu</td>
+                            <td>غير مُدار (موجود مسبقاً)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>الـ Reference</strong></td>
+                            <td><code>type.name.attr</code></td>
+                            <td><code>data.type.name.attr</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 3: Count Meta-Argument -->
+        <div class="section">
+            <h2>🔢 الوسائط الوصفية: count</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                يُستخدم لإنشاء عدة موارد من نفس الـ resource block. الموارد تُنشأ كـ <strong>قائمة (list)</strong> مع فهرس (index) يبدأ من 0.
+            </p>
+
+            <h3>📄 مثال أساسي</h3>
+            <div class="code-block">
+                <pre><span class="comment"># إنشاء 3 ماكينات EC2</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"web"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.instance_type</span>
+  <span class="argument">count</span>         = <span class="number">3</span>
+}</pre>
+            </div>
+
+            <h3>📄 استخدام <code>count.index</code> مع قائمة</h3>
+            <div class="code-block">
+                <pre><span class="comment"># variables.tf</span>
+<span class="keyword">variable</span> <span class="string">"webservers"</span> {
+  <span class="argument">type</span>    = <span class="keyword">list</span>(<span class="keyword">string</span>)
+  <span class="argument">default</span> = [<span class="string">"web1"</span>, <span class="string">"web2"</span>, <span class="string">"web3"</span>]
+}
+
+<span class="comment"># main.tf</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"web"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.instance_type</span>
+  <span class="argument">count</span>         = <span class="keyword">length</span>(<span class="variable">var.webservers</span>)  <span class="comment"># ← استخدام طول القائمة</span>
+
+  <span class="argument">tags</span> = {
+    <span class="argument">Name</span> = <span class="variable">var.webservers[count.index]</span>  <span class="comment"># ← count.index</span>
+  }
+}</pre>
+            </div>
+
+            <h3>🔍 النتيجة في الـ State</h3>
+            <div class="code-block">
+                <pre><span class="keyword">tofu state list</span>
+<span class="comment"># النتيجة:</span>
+<span class="comment"># aws_instance.web[0]  ← web1</span>
+<span class="comment"># aws_instance.web[1]  ← web2</span>
+<span class="comment"># aws_instance.web[2]  ← web3</span></pre>
+            </div>
+
+            <div class="problem-box">
+                <h4>❌ مشكلة count: الإزاحة (Index Shift)</h4>
+                <p style="margin-bottom: 10px;">عند حذف عنصر من بداية القائمة، تتغير الفهارس لجميع العناصر التالية!</p>
+
+                <h4>مثال:</h4>
+                <div class="flow-diagram">
+                    <div class="flow-box">
+                        <h5>قبل الحذف</h5>
+                        <p>[0]=web1, [1]=web2, [2]=web3</p>
+                    </div>
+                </div>
+
+                <div class="flow-diagram">
+                    <div class="flow-box" style="border-color: #ef4444; background: linear-gradient(135deg, #fef2f2, #fee2e2);">
+                        <h5 style="color: #dc2626;">بعد حذف web1</h5>
+                        <p>[0]=web2 ← سيتم تحديثه!<br>[1]=web3 ← سيتم تحديثه!<br>[2]=محذوف ← سيتم حذفه!</p>
+                    </div>
+                </div>
+
+                <p style="margin-top: 10px;">
+                    النتيجة: <strong>2 تحديث + 1 حذف</strong> بدلاً من حذف واحد فقط!
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 4: For_Each Meta-Argument -->
+        <div class="section">
+            <h2>🔄 الوسائط الوصفية: for_each</h2>
+            <p style="margin-bottom: 15px; color: var(--text-light);">
+                يُستخدم لإنشاء عدة موارد من نفس الـ resource block. الموارد تُنشأ كـ <strong>خريطة (map)</strong> بدلاً من قائمة.
+            </p>
+
+            <h3>📄 مثال أساسي</h3>
+            <div class="code-block">
+                <pre><span class="comment"># variables.tf - يجب أن يكون set وليس list</span>
+<span class="keyword">variable</span> <span class="string">"webservers"</span> {
+  <span class="argument">type</span>    = <span class="keyword">set</span>(<span class="keyword">string</span>)  <span class="comment"># ← set وليس list!</span>
+  <span class="argument">default</span> = [<span class="string">"web1"</span>, <span class="string">"web2"</span>, <span class="string">"web3"</span>]
+}
+
+<span class="comment"># main.tf</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"web"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">var.instance_type</span>
+  <span class="argument">for_each</span>      = <span class="variable">var.webservers</span>
+
+  <span class="argument">tags</span> = {
+    <span class="argument">Name</span> = <span class="variable">each.value</span>  <span class="comment"># ← each.value</span>
+  }
+}</pre>
+            </div>
+
+            <h3>📄 استخدام <code>toset()</code> مع قائمة</h3>
+            <div class="code-block">
+                <pre><span class="comment"># إذا كان المتغير list، يمكن تحويله إلى set</span>
+<span class="keyword">resource</span> <span class="string">"local_sensitive_file"</span> <span class="string">"name"</span> {
+  <span class="argument">filename</span> = <span class="variable">each.value</span>
+  <span class="argument">content</span>  = <span class="variable">var.content</span>
+  <span class="argument">for_each</span> = <span class="keyword">toset</span>(<span class="variable">var.users</span>)  <span class="comment"># ← تحويل list إلى set</span>
+}</pre>
+            </div>
+
+            <h3>📄 مثال مع map</h3>
+            <div class="code-block">
+                <pre><span class="comment"># variables.tf</span>
+<span class="keyword">variable</span> <span class="string">"servers"</span> {
+  <span class="argument">type</span> = <span class="keyword">map</span>(<span class="keyword">string</span>)
+  <span class="argument">default</span> = {
+    <span class="string">"web"</span>  = <span class="string">"t2.micro"</span>
+    <span class="string">"db"</span>   = <span class="string">"m5.large"</span>
+    <span class="string">"cache"</span> = <span class="string">"t3.small"</span>
+  }
+}
+
+<span class="comment"># main.tf</span>
+<span class="keyword">resource</span> <span class="string">"aws_instance"</span> <span class="string">"servers"</span> {
+  <span class="argument">ami</span>           = <span class="variable">var.ami</span>
+  <span class="argument">instance_type</span> = <span class="variable">each.value</span>
+  <span class="argument">for_each</span>      = <span class="variable">var.servers</span>
+
+  <span class="argument">tags</span> = {
+    <span class="argument">Name</span> = <span class="variable">each.key</span>  <span class="comment"># ← each.key</span>
+  }
+}</pre>
+            </div>
+
+            <h3>🔍 النتيجة في الـ State</h3>
+            <div class="code-block">
+                <pre><span class="keyword">tofu state list</span>
+<span class="comment"># النتيجة:</span>
+<span class="comment"># aws_instance.web["web1"]  ← خريطة وليس قائمة</span>
+<span class="comment"># aws_instance.web["web2"]</span>
+<span class="comment"># aws_instance.web["web3"]</span></pre>
+            </div>
+
+            <div class="solution-box">
+                <h4>✅ ميزة for_each: لا يوجد مشكلة الإزاحة</h4>
+                <p>عند حذف عنصر، يتم حذف العنصر المحدد فقط دون التأثير على الآخرين!</p>
+
+                <div class="flow-diagram">
+                    <div class="flow-box" style="border-color: #22c55e; background: linear-gradient(135deg, #f0fdf4, #dcfce7);">
+                        <h5 style="color: #16a34a;">بعد حذف web1</h5>
+                        <p>["web1"]=محذوف فقط ✅<br>["web2"]=بدون تغيير ✅<br>["web3"]=بدون تغيير ✅</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5: Comparison -->
+        <div class="section">
+            <h2>⚖️ مقارنة: count مقابل for_each</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-card count-card">
+                    <h4>count</h4>
+                    <ul>
+                        <li>✅ بسيط وسهل للفهم</li>
+                        <li>✅ مناسب للأعداد الثابتة</li>
+                        <li>❌ الموارد تُنشأ كـ <strong>قائمة</strong></li>
+                        <li>❌ مشكلة الإزاحة عند الحذف</li>
+                        <li>❌ لا يمكن استخدام قيم فريدة كمفتاح</li>
+                        <li>📌 الصيغة: <code>resource[0]</code>, <code>resource[1]</code></li>
+                    </ul>
+                </div>
+                <div class="comparison-card foreach-card">
+                    <h4>for_each</h4>
+                    <ul>
+                        <li>✅ الموارد تُنشأ كـ <strong>خريطة</strong></li>
+                        <li>✅ لا مشكلة إزاحة عند الحذف</li>
+                        <li>✅ كل مورد له مفتاح فريد</li>
+                        <li>❌ يتطلب <code>set</code> أو <code>map</code></li>
+                        <li>❌ لا يقبل <code>list</code> مباشرة (يحتاج <code>toset()</code>)</li>
+                        <li>📌 الصيغة: <code>resource["key"]</code></li>
+                    </ul>
+                </div>
+            </div>
+
+            <table class="command-table">
+                <thead>
+                    <tr>
+                        <th>المعيار</th>
+                        <th>count</th>
+                        <th>for_each</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>نوع المتغير</strong></td>
+                        <td><code>number</code> أو <code>list</code></td>
+                        <td><code>set</code> أو <code>map</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>المتغير الخاص</strong></td>
+                        <td><code>count.index</code></td>
+                        <td><code>each.key</code>, <code>each.value</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>التمثيل في الـ State</strong></td>
+                        <td>قائمة: <code>[0]</code>, <code>[1]</code>, <code>[2]</code></td>
+                        <td>خريطة: <code>["key1"]</code>, <code>["key2"]</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>عند حذف عنصر</strong></td>
+                        <td>⚠️ قد يتم تحديث موارد أخرى</td>
+                        <td>✅ يُحذف العنصر المحدد فقط</td>
+                    </tr>
+                    <tr>
+                        <td><strong>متى تستخدمه؟</strong></td>
+                        <td>أعداد ثابتة، عناصر متطابقة</td>
+                        <td>قيم فريدة، إدارة ديناميكية</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="interview-box">
+                <h4>🎤 سؤال مقابلة شائع جداً</h4>
+                <p>
+                    <strong>ما الفرق بين <code>count</code> و <code>for_each</code>؟ ولماذا تفضل <code>for_each</code> في معظم الحالات؟</strong><br><br>
+                    <code>count</code> يُنشئ الموارد كقائمة مع فهارس رقمية. عند حذف عنصر من المنتصف أو البداية، تتغير فهارس جميع العناصر التالية مما قد يؤدي إلى إعادة إنشاء موارد غير مرتبطة.<br><br>
+                    <code>for_each</code> يُنشئ الموارد كخريطة مع مفاتيح فريدة. عند حذف عنصر، يُحذف فقط العنصر المحدد بمفتاحه دون التأثير على الآخرين.<br><br>
+                    لذلك، <code>for_each</code> أكثر أماناً للإدارة الديناميكية.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 6: Practical Examples -->
+        <div class="section">
+            <h2>🎯 أمثلة عملية من الملف</h2>
+
+            <h3>📄 مثال 1: إنشاء ملفات محلية مع count</h3>
+            <div class="code-block">
+                <pre><span class="comment"># variables.tf</span>
+<span class="keyword">variable</span> <span class="string">"users"</span> {
+  <span class="argument">type</span> = <span class="keyword">list</span>(<span class="keyword">string</span>)
+  <span class="argument">default</span> = [<span class="string">"/root/user1"</span>, <span class="string">"/root/user2"</span>, <span class="string">"/root/user3"</span>]
+}
+
+<span class="keyword">variable</span> <span class="string">"content"</span> {
+  <span class="argument">default</span> = <span class="string">"password: S3cr3tP@ssw0rd"</span>
+}
+
+<span class="comment"># main.tf</span>
+<span class="keyword">resource</span> <span class="string">"local_sensitive_file"</span> <span class="string">"name"</span> {
+  <span class="argument">filename</span> = <span class="variable">var.users[count.index]</span>
+  <span class="argument">content</span>  = <span class="variable">var.content</span>
+  <span class="argument">count</span>    = <span class="keyword">length</span>(<span class="variable">var.users</span>)
+}</pre>
+            </div>
+
+            <h3>📄 مثال 2: إنشاء ملفات مع for_each</h3>
+            <div class="code-block">
+                <pre><span class="comment"># main.tf</span>
+<span class="keyword">resource</span> <span class="string">"local_sensitive_file"</span> <span class="string">"name"</span> {
+  <span class="argument">filename</span> = <span class="variable">each.value</span>
+  <span class="argument">content</span>  = <span class="variable">var.content</span>
+  <span class="argument">for_each</span> = <span class="keyword">toset</span>(<span class="variable">var.users</span>)  <span class="comment"># ← تحويل إلى set</span>
+}</pre>
+            </div>
+
+            <h3>📄 مثال 3: إنشاء عدة موارد مع نفس الإعداد</h3>
+            <div class="code-block">
+                <pre><span class="comment"># إنشاء 3 ملفات بنفس المحتوى</span>
+<span class="keyword">resource</span> <span class="string">"local_sensitive_file"</span> <span class="string">"name"</span> {
+  <span class="argument">filename</span> = <span class="string">"/root/file.txt"</span>
+  <span class="argument">content</span>  = <span class="string">"Hello World"</span>
+  <span class="argument">count</span>    = <span class="number">3</span>
+}
+
+<span class="comment"># النتيجة: 3 ملفات بنفس الاسم!</span>
+<span class="comment"># ملاحظة: هذا قد يسبب مشكلة لأن الملفات لها نفس الاسم</span></pre>
+            </div>
+        </div>
+
+        <!-- Section 7: Common Mistakes -->
+        <div class="section">
+            <h2>⚠️ أخطاء شائعة يجب تجنبها</h2>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 1: استخدام list مع for_each</h4>
+                <div class="code-block">
+                    <pre><span class="comment"># ❌ خطأ - for_each لا يقبل list</span>
+<span class="argument">for_each</span> = <span class="variable">var.users</span>  <span class="comment"># إذا كان users من نوع list</span>
+
+<span class="comment"># ✅ صحيح - تحويل إلى set أولاً</span>
+<span class="argument">for_each</span> = <span class="keyword">toset</span>(<span class="variable">var.users</span>)</pre>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 2: نسيان القوس المربع مع count.index</h4>
+                <div class="code-block">
+                    <pre><span class="comment"># ❌ خطأ</span>
+<span class="argument">Name</span> = <span class="variable">var.webservers.count.index</span>
+
+<span class="comment"># ✅ صحيح</span>
+<span class="argument">Name</span> = <span class="variable">var.webservers[count.index]</span></pre>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 3: استخدام count مع قيم فريدة</h4>
+                <p>
+                    إذا كانت القائمة تحتوي على قيم فريدة (مثل أسماء السيرفرات)، استخدم <code>for_each</code> بدلاً من <code>count</code> لتجنب مشكلة الإزاحة.
+                </p>
+            </div>
+
+            <div class="warning-box">
+                <h4>❌ خطأ 4: تكرار نفس الاسم في الملفات مع count</h4>
+                <p>
+                    عند استخدام <code>count</code> لإنشاء ملفات محلية، تأكد من أن كل ملف له اسم فريد. وإلا سيتم إنشاء ملف واحد فقط!
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 8: Interview Questions -->
+        <div class="section">
+            <h2>🎤 أسئلة مقابلات مهمة</h2>
+
+            <div class="interview-box">
+                <h4>سؤال 1: ما الفرق بين Resource و Data Source؟</h4>
+                <p>
+                    <strong>Resource:</strong> يُستخدم لإنشاء وتعديل وحذف البنية التحتية (مُدار بواسطة OpenTofu).<br>
+                    <strong>Data Source:</strong> يُستخدم فقط لقراءة معلومات من موارد موجودة مسبقاً (غير مُدار).
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 2: ما هي صيغة الـ Reference لـ Data Source؟</h4>
+                <p>
+                    <code>data.data_type.data_name.attribute</code><br>
+                    مثال: <code>data.aws_key_pair.cerberus-key.key_name</code>
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 3: لماذا <code>for_each</code> أفضل من <code>count</code> في معظم الحالات؟</h4>
+                <p>
+                    لأن <code>count</code> يُنشئ الموارد كقائمة مع فهارس رقمية. عند حذف عنصر، تتغير فهارس جميع العناصر التالية مما قد يؤدي إلى إعادة إنشاء موارد غير مرتبطة.<br>
+                    بينما <code>for_each</code> يُنشئ الموارد كخريطة مع مفاتيح فريدة، مما يجعل الحذف أكثر دقة.
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 4: ما هي أنواع البيانات التي يمكن استخدامها مع <code>for_each</code>؟</h4>
+                <p>
+                    <code>set</code> أو <code>map</code> فقط. لا يمكن استخدام <code>list</code> مباشرة (يجب تحويله إلى <code>set</code> أولاً باستخدام <code>toset()</code>).
+                </p>
+            </div>
+
+            <div class="interview-box">
+                <h4>سؤال 5: ما الفرق بين <code>each.key</code> و <code>each.value</code>؟</h4>
+                <p>
+                    <strong><code>each.key</code>:</strong> المفتاح في الخريطة (أو القيمة في الـ set).<br>
+                    <strong><code>each.value</code>:</strong> القيمة المرتبطة بالمفتاح في الخريطة (أو القيمة في الـ set).<br><br>
+                    في حالة الـ <code>set</code>، <code>each.key</code> و <code>each.value</code> يكونان نفس القيمة.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 9: Quick Reference -->
+        <div class="section">
+            <h2>⚡ مرجع سريع</h2>
+
+            <div class="code-block">
+                <pre><span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># Data Sources</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># الصيغة</span>
+<span class="keyword">data</span> <span class="string">"type"</span> <span class="string">"name"</span> { <span class="argument">arg</span> = <span class="string">"value"</span> }
+
+<span class="comment"># Reference</span>
+<span class="data">data.type.name.attribute</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># count</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># عدد ثابت</span>
+<span class="argument">count</span> = <span class="number">3</span>
+
+<span class="comment"># مع قائمة</span>
+<span class="argument">count</span> = <span class="keyword">length</span>(<span class="variable">var.list</span>)
+<span class="argument">Name</span>  = <span class="variable">var.list[count.index]</span>
+
+<span class="comment"># النتيجة: resource[0], resource[1], resource[2]</span>
+
+<span class="comment"># ═══════════════════════════════════════════════</span>
+<span class="comment"># for_each</span>
+<span class="comment"># ═══════════════════════════════════════════════</span>
+
+<span class="comment"># مع set</span>
+<span class="argument">for_each</span> = <span class="variable">var.set</span>
+<span class="argument">Name</span>     = <span class="variable">each.value</span>
+
+<span class="comment"># مع list (تحويل إلى set)</span>
+<span class="argument">for_each</span> = <span class="keyword">toset</span>(<span class="variable">var.list</span>)
+
+<span class="comment"># مع map</span>
+<span class="argument">for_each</span> = <span class="variable">var.map</span>
+<span class="argument">Name</span>     = <span class="variable">each.key</span>
+<span class="argument">Type</span>     = <span class="variable">each.value</span>
+
+<span class="comment"># النتيجة: resource["key1"], resource["key2"]</span></pre>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-links">
+            <a href="04-state-and-lifecycle.html">→ السابق: الحالة وقواعد دورة الحياة</a>
+            <a href="#">التالي: قيود الإصدارات والـ Modules ←</a>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                📚 <strong>المصدر الرئيسي:</strong>
+                <a href="https://opentofu.org/docs/language/data-sources/" target="_blank">OpenTofu Data Sources</a> |
+                <a href="https://opentofu.org/docs/language/meta-arguments/count/" target="_blank">count</a> |
+                <a href="https://opentofu.org/docs/language/meta-arguments/for_each/" target="_blank">for_each</a>
+            </p>
+            <p style="margin-top: 10px;">
+                🎓 <strong>الهدف:</strong> الحصول على شهادة DevOps ووظيفة في مجال الـ Cloud
+            </p>
+            <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light);">
+                تم الإنشاء بواسطة Teaching Workspace | المرجع رقم: 05
+            </p>
+        </div>
+    </div>
+</body>
+</html>
