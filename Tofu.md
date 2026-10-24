@@ -12,6 +12,8 @@ aliases:
   - OpenTofu Cheatsheet
 created: 2026-10-19
 ---
+https://github.com/Azure/aztfexport
+
 
 # OpenTofu Course Notes
 
@@ -1181,3 +1183,428 @@ tofu apply -replace=<addr>
 tofu workspace new | select | list
 tofu destroy -auto-approve
 ```
+
+
+
+## Multiple Providers — Azure Multi-Subscription
+
+
+**الحالات اللي نحتاج فيها أكثر من provider:**
+- النشر على أكثر من Azure subscription بنفس الكود.
+- النشر بهويات (identities) متعددة على بيئات متعددة.
+- النشر على أكثر من Azure AD tenant.
+- معمارية Hub & Spoke.
+
+- Enterprise Landing Zone.
+**الفكرة:** نفس أسلوب الـ alias — لكن مع `azurerm`، كل provider block له `subscription_id` و `tenant_id` مختلفين، وكل resource يحدد الـ provider المطلوب صراحة.
+
+```hcl
+terraform {
+  required_version = ">= 1.2.8"
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = ">= 3.26.0"
+    }
+  }
+}
+
+# provider الاشتراك الأساسي (hub)
+
+provider "azurerm" {
+  alias           = "subscription_hub"
+  subscription_id = "4b72ed90-7ca3-4e76-8d0f-xxxxxxxx"
+  tenant_id       = "72f988bf-86f1-41af-91ab-xxxxxxxx"
+  # client_id / client_secret اختيارية — الأفضل env vars أو Workload Identity
+  # auxiliary_tenant_ids = ["558506eb-9459-4ef3-b920-xxxxxxxx"]   # tenants إضافية
+  features {}
+}
+
+# provider الاشتراك الثاني (spoke) — ممكن يكون tenant مختلف
+
+provider "azurerm" {
+  alias           = "subscription_spoke"
+  subscription_id = "59d574d4-1c03-4092-ab22-xxxxxxxx"
+  tenant_id       = "558506eb-9459-4ef3-b920-xxxxxxxx"
+  features {}
+}
+
+```
+
+**استخدام الـ providers في الموارد:**
+
+```hcl
+
+resource "azurerm_resource_group" "rg_hub" {
+  provider = azurerm.subscription_hub
+  name     = "rg_hub"
+  location = "westeurope"
+}
+
+resource "azurerm_resource_group" "rg_spoke" {
+  provider = azurerm.subscription_spoke
+  name     = "rg_spoke"
+  location = "northeurope"
+}
+
+resource "azurerm_virtual_network" "vnet_hub" {
+  provider            = azurerm.subscription_hub
+  name                = "vnet_hub"
+  resource_group_name = azurerm_resource_group.rg_hub.name
+  location            = "westeurope"
+  address_space       = ["10.1.0.0/16"]
+}
+
+resource "azurerm_virtual_network" "vnet_spoke" {
+  provider            = azurerm.subscription_spoke
+  name                = "vnet_spoke"
+  resource_group_name = azurerm_resource_group.rg_spoke.name
+  location            = "northeurope"
+  address_space       = ["10.2.0.0/16"]
+}
+
+```
+
+  
+**النتيجة:** `apply` واحد ينشئ 4 موارد موزعة على الاشتراكين — `rg_hub` + `vnet_hub` في West Europe و `rg_spoke` + `vnet_spoke` في North Europe.
+
+
+> [!tip] نقاط مهمة
+> - `features {}` إلزامية داخل كل provider block للـ azurerm حتى لو فاضية.
+> - الـ provider بدون alias هو الافتراضي؛ اللي بـ alias لازم تشير له صراحة بـ `provider = azurerm.<alias>`.
+> - `tenant_id` مختلف لكل provider = نشر عبر أكثر من Azure AD tenant.
+> - متحطش `client_secret` في الكود — استخدم environment variables أو Workload Identity (OIDC).
+
+**مصادر:**
+  
+[Lab: 25_multi_provider](https://github.com/HoussemDellai/terraform-course/tree/main/25_multi_provider) · [Workload Identity Overview](https://learn.microsoft.com/en-us/azure/aks/workload-identity-overview) · [MS Learn Tutorial](https://learn.microsoft.com/en-us/azure/aks/learn/tutorial-kubernetes-workload-identity) · [AKS Labs](https://github.com/HoussemDellai/docker-kubernetes-course)
+
+
+## Data Sources — http & jsondecode
+
+  
+
+- `data "http"` يجلب بيانات من أي REST API — النتيجة نص، ولو كان الرد JSON نحوّله object بـ `jsondecode()`.
+
+- `request_headers` لتحديد الـ Accept header عند الحاجة.
+
+  
+
+```hcl
+
+# الـ IP العام لجهازك — الرد نص عادي
+data "http" "my_ip" {
+  url = "http://ifconfig.me"
+}
+
+
+output "myIp" {
+  value = data.http.my_ip.body
+}
+  
+
+# آخر إصدار Terraform — الرد JSON
+data "http" "tf_latest" {
+  url = "https://checkpoint-api.hashicorp.com/v1/check/terraform"
+  request_headers = {
+    Accept = "application/json"
+  }
+}
+  
+
+output "terraform_latest_version" {
+  value = jsondecode(data.http.tf_latest.body).current_version
+}
+
+  
+
+# آخر إصدار azurerm provider — نفس الفكرة مع GitHub API
+data "http" "azurerm_latest" {
+  url = "https://api.github.com/repos/terraform-providers/terraform-provider-azurerm/releases/latest"
+  request_headers = {
+    Accept = "application/json"
+  }
+}
+
+  
+
+output "azurerm_latest_version" {
+  value = jsondecode(data.http.azurerm_latest.body).name
+}
+
+```
+
+  
+
+```hcl
+
+# data source خاص بـ provider — الإصدارات المتاحة لـ AKS في region معين
+data "azurerm_kubernetes_service_versions" "current" {
+  location        = "West Europe"
+  include_preview = true
+}
+
+output "aks_latest_version" {
+  value = data.azurerm_kubernetes_service_versions.current.latest_version
+}
+
+```
+
+  
+---
+## Random Resources
+
+  
+
+```hcl
+
+# كلمة مرور بسياسة صارمة
+
+resource "random_string" "password" {
+  length           = 20
+  special          = true
+  override_special = "!@#$%&*()-_=+[]{}<>:?"   # استبدال الرموز الافتراضية
+  min_special      = 2
+  min_upper        = 2
+  min_lower        = 5
+  min_numeric      = 3
+}
+
+  
+
+# رقم عشوائي في نطاق محدد
+
+resource "random_integer" "number" {
+  min = 5
+  max = 100
+}
+
+
+# UUID — مفيد للأسماء الفريدة
+resource "random_uuid" "id" {}
+
+output "random_values" {
+  value = {
+    password = random_string.password.result
+    number   = random_integer.number.result
+    uuid     = random_uuid.id.result
+  }
+}
+
+```
+  
+
+> [!note]
+> - كلها logical resources تُسجَّل في الـ state فقط (مثل `random_pet` و `time_static`).
+> - `keepers` تتحكم في إعادة الإنشاء — راجع [[#LifeCycle Rules]].
+
+
+---
+
+## Variable Validation & Sensitive
+
+- `sensitive = true` على الـ variable: لا تُطبع قيمته في plan/apply.
+- `validation`: فحص القيمة عند الـ plan — يفشل مبكرًا قبل إنشاء أي شيء.
+
+
+```hcl
+
+variable "rg_name" {
+  type        = string
+  description = "The name of the Azure Resource Group."
+  default     = "rg-frontend_app"
+  sensitive   = true
+
+  
+
+  validation {
+    condition     = length(var.rg_name) > 3 && substr(var.rg_name, 0, 3) == "rg-"
+    # بديل بالـ regex: can(regex("^rg-", var.rg_name))
+    error_message = "The rg_name value must be valid, starting with \"rg-\"."
+  }
+}
+
+  
+
+variable "location" {
+  type    = string
+  default = "westeurope"
+
+  # anytrue + for expression: القيمة تطابق أي عنصر من القائمة
+
+  validation {
+    condition     = anytrue([for l in ["eastus", "westeurope"] : l == var.location])
+    # بديل: contains(["eastus", "westeurope"], lower(var.location))
+    error_message = "The region should be eastus or westeurope."
+  }
+}
+
+```
+
+
+> [!tip]
+> `contains()` حساس لحالة الأحرف — استخدم `lower(var.location)` لتوحيد المقارنة.
+
+
+---
+## Feature Flags — Enable/Disable Resources
+  
+- لا يوجد attribute اسمه `enabled` — التحكم في إنشاء/تجاهل المورد كله يتم عبر `count` أو `for_each` مع bool.
+
+
+```hcl
+
+variable "resource_enabled" {
+  type        = bool
+  default     = true
+  description = "Enable or disable creation of Resource Group"
+}
+
+  
+
+# الطريقة 1: count
+
+resource "azurerm_resource_group" "rg_count" {
+  count    = var.resource_enabled ? 1 : 0
+  name     = "rg_enabled"
+  location = "westeurope"
+}
+
+  
+
+# الطريقة 2: for_each مع toset — قائمة فيها عنصر واحد أو فاضية
+
+resource "azurerm_resource_group" "rg_for_each" {
+  for_each = var.resource_enabled ? toset(["any_value"]) : toset([])
+  name     = "rg_enabled"
+  location = "westeurope"
+}
+
+  
+
+# الـ outputs تحتاج حماية من الـ null لما المورد معطّل
+
+output "rg_id_count" {
+  value = var.resource_enabled ? azurerm_resource_group.rg_count.0.id : null
+}
+
+  
+
+output "rg_id_for_each" {
+  value = var.resource_enabled ? azurerm_resource_group.rg_for_each["any_value"].id : null
+}
+
+```
+  
+
+**تعطيل nested block (وليس مورد كامل):**
+
+
+```hcl
+
+resource "azurerm_storage_account" "storage" {
+  name                     = "storage091"
+  resource_group_name      = azurerm_resource_group.rg_for_each["any_value"].name
+  location                 = "westeurope"
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+
+  # nested block يُتحكم فيه بـ dynamic + شرط
+  dynamic "network_rules" {
+    for_each = var.resource_enabled ? ["any_value"] : []
+    content {
+      default_action = "Deny"
+      ip_rules       = ["100.0.0.1"]
+    }
+  }
+}
+
+```
+
+  
+
+> [!warning]
+> `count` لا يُقبل داخل الـ nested blocks — استخدم `dynamic` + `for_each` بقائمة فاضية/مفردة.
+
+
+---
+
+## Provisioners — null_resource, interpreter & WinRM
+
+- `null_resource`: مورد منطقي لا ينشئ شيئًا في السحابة — حاوية للـ provisioners فقط.
+- `interpreter`: تغيير المفسّر الافتراضي لأمر الـ local-exec (مفيد على Windows).
+
+
+```hcl
+resource "null_resource" "time_now" {
+  provisioner "local-exec" {
+    command     = "Get-Date > date.txt"
+    interpreter = ["PowerShell", "-Command"]
+  }
+}
+
+```
+
+```hcl
+
+# remote-exec على Windows عبر WinRM بدل SSH
+
+resource "null_resource" "remote" {
+  provisioner "remote-exec" {
+    connection {
+      host     = azurerm_public_ip.windows.ip_address
+      type     = "winrm"
+      port     = 5985
+      https    = false
+      timeout  = "5m"
+      user     = var.admin_username
+      password = var.admin_password
+    }
+    inline = [
+      "powershell.exe -ExecutionPolicy Unrestricted -Command {Install-WindowsFeature -name Web-Server -IncludeManagementTools}",
+    ]
+  }
+}
+
+```
+
+
+> [!note]
+> امتداد لقسم [[#OpenTofu Provisioners]] — فيه SSH على Linux؛ هنا WinRM على Windows بنفس الـ connection block.
+
+
+
+
+
+**Service Principal** هو هوية تطبيقية تُسجَّل في Microsoft Entra ID (المعروف سابقاً بـ Azure AD) لتُمثّل برنامجاً أو أداة آلية، وليس مستخدماً بشرياً. عندما يشغّل Terraform عمليات `plan` أو `apply` في خط أنابيب CI/CD، فإنه يحتاج إلى وسيلة ليُثبت لـ Azure من هو وما المسموح له بفعله. الـ Service Principal يوفّر هذه الوسيلة: يُنشأ حساب تطبيقي مستقل، ويُمنح صلاحيات محددة عبر RBAC، ثم يُمرَّر Terraform بيانات اعتماده (مثل `ARM_CLIENT_ID` و `ARM_CLIENT_SECRET`) ليتحدث مع Azure Resource Manager.
+
+البديل الشائع في السيناريوهات الآلية هو تشغيل Terraform بحساب مستخدم عادي عبر `az login`. هذا الأسلوب مقبول للتطوير المحلي، لكنه في الإنتاج يربط البنية التحتية بهوية شخص واحد وصلاحياته الكاملة، وقد تنتهي جلسته أو تتغير مسؤولياته فيتوقف خط الأنابيب. الـ Service Principal يفصل هوية التنفيذ عن هوية المستخدم، ويجعل الوصول إلى Azure محكوماً بهوية مخصصة للبرنامج وحده.
+
+## كيف يُحسّن الـ Service Principal أمان Terraform؟
+
+### 1. تطبيق مبدأ أقل امتياز (Least Privilege)
+الـ Service Principal يمكن منحه دوراً محدداً على نطاق ضيق، مثل Resource Group واحد أو اشتراك واحد، بدلاً من منحه دور Contributor أو Owner على مستوى المؤسسة كلها. هذا يحدّ من مساحة الضرر: إذا تسرّبت بيانات اعتماد الـ Service Principal، فإن المهاجم لا يحصل تلقائياً على صلاحية العبث بكل موارد الاشتراك. التوصية العملية هي ربط Terraform بأدوار RBAC لا تتجاوز ما يحتاجه فعلاً لإنشاء الموارد المطلوبة وإدارتها.
+
+### 2. إزالة الحاجة إلى MFA للمستخدمين في الأتمتة
+اعتباراً من سبتمبر 2026، يُطبَّق إلزام المصادقة متعددة العوامل (MFA) على تسجيلات المستخدمين في أدوات Azure، بما فيها Terraform عندما يعمل بهوية مستخدم. الـ Service Principal (وكذلك Managed Identity) مستثنى من هذا الإلزام لأنه ليس حساب مستخدم. هذا يعني أن الاعتماد على Service Principal في الأتمتة يحمي خط الأنابيب من التوقف عند تفعيل MFA الإلزامي، ويزيل الحاجة إلى التفافّات غير آمنة حول سياسة المصادقة.
+
+### 3. إدارة أفضل للأسرار مقارنة بالاعتماد على كلمات مرور المستخدمين
+الـ Service Principal يدعم طريقتين للتوثيق: **سر العميل (Client Secret)** أو **شهادة (Certificate)**. الشهادة أكثر أماناً لأنها لا تُرسَل ككلمة مرور قابلة للنسخ، ويمكن أن تكون أقصر صلاحية. لكن أي طريقة تختارها، القاعدة الأهم هي عدم وضع السر في كود Terraform نفسه أو في مستودع Git. بدلاً من ذلك، يُخزَّن السر في Azure Key Vault أو في نظام إدارة أسرار خاص بمنصة CI/CD، ويُحقن وقت التشغيل فقط. الـ Service Principal يجعل هذا الفصل ممكناً لأنه هوية مستقلة يمكن تدوير سرها دون التأثير على أي مستخدم بشري.
+
+### 4. تقليل خطر تسرّب الأسرار من ملفات حالة Terraform
+ملفات حالة Terraform (`terraform.tfstate`) تُخزَّن افتراضياً بصيغة JSON وتحتوي أحياناً على قيم حساسة. إذا رُبط Terraform بحساب مستخدم واسع الصلاحيات، فإن أي تسرّب لملف الحالة لا يكشف الأسرار فقط، بل يمنح المهاجم أيضاً سياقاً كاملاً عن البنية التحتية. عند استخدام Service Principal محدود الصلاحيات، يبقى خطر تسرّب الحالة قائماً، لكن أثره التشغيلي والأمني أضيق لأن الهوية المرتبطة بالحالة لا تستطيع تجاوز حدودها المرسومة بـ RBAC.
+
+### 5. سجل تدقيق أوضح
+كل عملية يقوم بها Service Principal تُسجَّل في سجلات Microsoft Entra ID وسجلات نشاط Azure تحت هوية التطبيق، وليس تحت اسم موظف. هذا يسهّل معرفة أي تغيير في البنية التحتية جاء من خط الأنابيب الآلي وأي تغيير جاء من تدخل بشري، ويجعل المراجعات الأمنية أكثر دقة.
+
+## متى يكون الـ Service Principal الخيار المناسب، ومتى تُفضَّل Managed Identity؟
+
+الـ Service Principal هو الخيار الأكثر شيوعاً عندما يعمل Terraform من خارج Azure، مثل GitHub Actions أو Azure DevOps أو خادم CI/CD خارجي. في هذه الحالات لا توجد هوية مُدارة مرتبطة بمورد Azure، فيلزم إنشاء Service Principal صريح ومنحه الصلاحيات المطلوبة.
+
+أما إذا كان Terraform يعمل من داخل Azure، مثل وكيل Azure DevOps المستضاف أو جهاز Azure افتراضي أو Azure Cloud Shell، فإن **Managed Identity** غالباً أفضل. فهي هوية يديرها Azure تلقائياً، ولا تحتاج إلى سر أو شهادة يخزّنها العميل أو يدوّرها. النتيجة هي تقليل سطح الهجوم المرتبط بإدارة الأسرار إلى الحد الأدنى.
+
+## ممارسات عملية لتأمين Terraform عبر Service Principal
+
+عند إنشاء Service Principal لـ Terraform، اربطه بأدوار RBAC محددة النطاق بدلاً من الأدوار الواسعة. يُفضَّل إنشاء Service Principal منفصل لكل بيئة (تطوير، اختبار، إنتاج) بدلاً من هوية واحدة تخدم كل البيئات. إذا كان لا بد من استخدام سر عميل، فاضبط مدة صلاحيته على 90 يوماً أو أقل بدلاً من القيمة الافتراضية التي قد تصل إلى 24 شهراً، وفعّل التدوير المنتظم. الأفضل من ذلك هو استخدام **OpenID Connect (OIDC)** حيث يدعمه مزود Terraform ومنصة CI/CD، لأنه يلغي الحاجة إلى تخزين سر طويل الأجل تماماً ويحصل على رمز وصول قصير الأجل عند كل تشغيل. وأخيراً، خزّن حالة Terraform في خلفية بعيدة (مثل Azure Storage) مع تشفير وتقييد وصول، حتى لا تتحول نسخة محلية من ملف الحالة إلى نقطة ضعف.
+
+باختصار، الـ Service Principal ليس مجرد "طريقة لتسجيل الدخول" في Terraform؛ إنه الفصل بين هوية الإنسان وهوية الأتمتة، وهو الفصل الذي يجعل من الممكن تطبيق أقل امتياز، وتدوير الأسرار، والتدقيق، والتعامل مع سياسات المصادقة الحديثة دون كسر خطوط الأنابيب.

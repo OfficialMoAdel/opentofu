@@ -135,11 +135,13 @@ header p {
     padding: 20px;
     text-align: center;
     border: 2px solid var(--primary);
-    transition: transform 0.2s;
+    transition: transform 150ms ease-out;
 }
 
-.workflow-card:hover {
-    transform: translateY(-3px);
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .workflow-card:hover {
+        transform: translateY(-3px);
+    }
 }
 
 .workflow-card .step-number {
@@ -280,8 +282,10 @@ header p {
     border-bottom: 1px solid var(--border);
 }
 
-.command-table tr:hover {
-    background: #f5f3ff;
+@media (hover: hover) {
+    .command-table tr:hover {
+        background: #f5f3ff;
+    }
 }
 
 .command-table code {
@@ -337,11 +341,13 @@ header p {
     padding: 15px;
     text-align: center;
     border: 2px solid;
-    transition: transform 0.2s;
+    transition: transform 150ms ease-out;
 }
 
-.type-card:hover {
-    transform: translateY(-3px);
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .type-card:hover {
+        transform: translateY(-3px);
+    }
 }
 
 .type-card.string {
@@ -472,11 +478,13 @@ header p {
     padding: 10px 20px;
     border-radius: 8px;
     background: #f5f3ff;
-    transition: background 0.2s;
+    transition: background-color 150ms ease-out;
 }
 
-.nav-links a:hover {
-    background: #ede9fe;
+@media (hover: hover) {
+    .nav-links a:hover {
+        background-color: #ede9fe;
+    }
 }
 
 .dep-grid {
@@ -491,11 +499,13 @@ header p {
     padding: 20px;
     text-align: center;
     border: 2px solid;
-    transition: transform 0.2s;
+    transition: transform 150ms ease-out;
 }
 
-.dep-card:hover {
-    transform: translateY(-3px);
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .dep-card:hover {
+        transform: translateY(-3px);
+    }
 }
 
 .dep-card.implicit {
@@ -648,11 +658,13 @@ header p {
     padding: 20px;
     text-align: center;
     border: 2px solid;
-    transition: transform 0.2s;
+    transition: transform 150ms ease-out;
 }
 
-.concept-card:hover {
-    transform: translateY(-3px);
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .concept-card:hover {
+        transform: translateY(-3px);
+    }
 }
 
 .concept-card.state {
