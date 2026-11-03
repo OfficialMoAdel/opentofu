@@ -1,6 +1,6 @@
 ---
 title: OpenTofu Course Notes
-source: https://github.com/abdelghafarabdelmordy/create-vm-terraform-vsphere
+source:
 tags:
   - opentofu
   - terraform
