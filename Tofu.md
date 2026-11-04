@@ -1572,3 +1572,142 @@ resource "null_resource" "remote" {
 > [!note]
 > امتداد لقسم [[#OpenTofu Provisioners]] — فيه SSH على Linux؛ هنا WinRM على Windows بنفس الـ connection block.
 
+
+## Migrating from Deprecated Resources
+
+  
+- لما provider يوقف دعم resource (deprecated) أو يغيّر اسمه — نرحّل للبديل **بدون إعادة إنشاء البنية التحتية**.
+- اللي يتغيّر هو الـ state والإعدادات فقط؛ الموارد الحقيقية في Azure تبقى كما هي.
+- مثال: `azurerm_app_service` → `azurerm_linux_web_app` و `azurerm_app_service_plan` → `azurerm_service_plan`.
+
+
+**قبل — الموارد القديمة:**
+  
+
+```hcl
+
+resource "azurerm_app_service_plan" "plan" {
+  name                = "MyAppServicePlan"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  kind                = "Linux"
+  reserved            = true
+  sku {
+    tier = "Standard"
+    size = "S1"
+  }
+}
+
+  
+
+resource "azurerm_app_service" "app" {
+  name                = "mywebapp-01357"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  app_service_plan_id = azurerm_app_service_plan.plan.id
+  site_config {
+    dotnet_framework_version = "v4.0"   # deprecated
+  }
+}
+
+```
+
+
+**بعد — البدائل المدعومة:**
+
+
+```hcl
+
+resource "azurerm_service_plan" "plan" {
+  name                = "MyAppServicePlan"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  os_type             = "Linux"
+  sku_name            = "S1"
+}
+
+  
+
+resource "azurerm_linux_web_app" "app" {
+  name                = "mywebapp-01357"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_service_plan.plan.location
+  service_plan_id     = azurerm_service_plan.plan.id
+  site_config {
+    application_stack {
+      dotnet_version = "6.0"
+    }
+  }
+}
+
+```
+
+
+**الترحيل في 3 خطوات:**
+
+
+```bash
+
+# نشر الموارد القديمة أولاً
+
+terraform init
+
+terraform plan -out tfplan
+
+terraform apply tfplan
+
+
+# 1) إزالة القديم من الـ state — بعد حفظ الـ resource ID الحقيقي
+
+terraform state list
+
+# azurerm_app_service.app
+# azurerm_app_service_plan.plan
+# azurerm_resource_group.rg
+  
+
+APP_SERVICE_PLAN_RESOURCE_ID=$(echo azurerm_app_service_plan.plan.id | terraform console)
+
+APP_SERVICE_RESOURCE_ID=$(echo azurerm_app_service.app.id | terraform console)
+
+  
+
+terraform state rm azurerm_app_service.app azurerm_app_service_plan.plan
+
+
+# 2) تحديث الإعدادات — علّق الموارد القديمة وفعّل البدائل الجديدة
+  
+
+# 3) استيراد الجديد إلى الـ state بنفس الـ ID
+
+terraform import azurerm_service_plan.plan $APP_SERVICE_PLAN_RESOURCE_ID
+
+terraform import azurerm_linux_web_app.app $APP_SERVICE_RESOURCE_ID
+  
+
+# التحقق — المفروض يظهر: No changes
+
+terraform plan
+
+```
+
+  
+
+> [!important] الفكرة الجوهرية
+> `state rm` يخرّج المورد من الإدارة **بدون حذفه** (راجع [[#State Commands]])، و `import` يُدخل المورد الحقيقي نفسه تحت الإدارة الجديدة (راجع [[#Tofu Import]]) — فينتهي الأمر بنفس الموارد لكن بأنواع مدعومة.
+
+  
+
+> [!tip] لو التغيير rename فقط
+> نفس الـ schema لكن اسم النوع اتغيّر؟ يكفي تغيير اسم النوع في الإعدادات + `terraform state mv old_name new_name` (أو بلوك `moved` الحديث) — بدون rm/import.
+
+
+- بعد الترحيل راجع الـ configuration: بعض الـ attributes اتغيرت أو اتنزعت بين النوع القديم والجديد (مثل `sku {}` → `sku_name`، و `dotnet_framework_version` → `application_stack`).
+- نفس الأوامر تعمل مع `tofu` بدل `terraform`.
+
+**مصادر:**
+  
+
+[Official migration guide](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/migrating-from-deprecated-resources) · [Lab: 95_migrate_deprecated](https://github.com/HoussemDellai/terraform-course/tree/main/95_migrate_deprecated)
+
+
